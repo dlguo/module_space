@@ -33,6 +33,6 @@ vignettes/*.pdf
 *.knit.md
 
 # Docs and output
-doc/
+docs/
 output/
 .vscode/
