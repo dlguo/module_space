@@ -4,39 +4,6 @@ library(Matrix)
 library(ggplot2)
 source("./net_proc.R")
 
-GraphMFPT <- function(
-  g,
-  v=V(g),
-  edge.attr.weight=NULL,
-  average.distances=TRUE
-) {
-  # calculate the mean first-passage time (MFPT) between every vertex pair
-  # Algorithms for Estimating Relative Importance in Networks, White & Smyth, 2003
-  # this function will return Inf distances if the graph is not connected
-  # any edge attribute specified should be the weight of the edge (higher weights -> more significant) not the distance
-  
-  if (class(v) != "igraph.vs") v <- AsiGraph(v, g) # if v is not an igraph-class object, convert
-  
-  # obtain the sparse unamed adjacency matrix
-  adj <- get.adjacency(g, attr=edge.attr.weight, names=F, sparse=T, type="both")
-  
-  # compute the distance matrix for each of the connected clusters of vertices
-  D <- array(Inf, dim=rep(vcount(g), 2))
-  c <- clusters(g) 
-  for (i in 1:c$no) {
-    indices <- which(c$membership == i)
-    D[indices, indices] <- MFPTfct(adj[indices, indices])
-  }
-  
-  if (average.distances) D <- (D + t(D)) / 2 # if required, take the average of the reciprical distances
-  diag(D) <- 0 # the distance between vertex A and A should always be 0
-  
-  # return rows for each vertex in v
-  D <- as.matrix(D[v, ])
-  dimnames(D) <- list(V(g)$name[as.numeric(v)], V(g)$name) 
-  
-  mean(1/D[lower.tri(D)])
-}
 
 MFPTfct <- function(adj) {
   # calculate the mean first-passage time (MFPT) for a fully connected graph from the adjacency matrix
@@ -58,8 +25,8 @@ comm <- function(g){
   mean(1/D[lower.tri(D)])
 }
 
-t_diff <- function(glist) sapply(glist, GraphMFPT)
-t_comm <- function(glist) sapply(glist, comm)
+DiffusionSeries <- function(glist) sapply(glist, GraphMFPT)
+CommSeries <- function(glist) sapply(glist, comm)
 
 subj_list <- c("100307", "100408", "101107")
 task_list <- c("rfMRI_REST1", "tfMRI_EMOTION", "tfMRI_GAMBLING", "tfMRI_LANGUAGE", "tfMRI_MOTOR", "tfMRI_RELATIONAL", "tfMRI_SOCIAL", "tfMRI_WM")
@@ -67,7 +34,7 @@ M <- data.frame()
 for(s in subj_list){
   for(task in task_list){
     load(paste(s, task, "LR.RData", sep='_'))
-    m <- cbind(t_diff(net_series), t_comm(net_series), rep(s, length(net_series)), rep(task, length(net_series)))
+    m <- cbind(DiffusionSeries(net_series), CommSeries(net_series), rep(s, length(net_series)), rep(task, length(net_series)))
     M <- rbind(M, m)
   }
 }
