@@ -1,0 +1,333 @@
+##################################################
+## Project: module_space
+## Script purpose: network processing
+## Date: Mon Mar 26 12:36:06 2018
+## Author: Dali Guo
+##################################################
+
+require(igraph)
+require(Hmisc)
+require(ppcor)
+require(corpcor)
+require(gdata)
+
+# file loading function (convert to correlation matrix)
+LoadAparcAseg <- function(data_loc, parc_loc, windowSize, rm.endpoint=TRUE, type=c("full", "partial"), skip=10) {
+  
+  # evaluate type
+  type <- match.arg(type)
+  
+  # load parcellation
+  parc <- read.xls(parc_loc, sheet=1)
+  rsn7 <- parc$aparc_aseg_RSN.7
+  
+  # load data file
+  ts <- as.matrix(read.csv(data_loc, header = FALSE))
+  
+  # remove subcortical and cerebellum
+  rsn7 <- rsn7[-which(rsn7==8)]
+  
+  # get the dimension
+  m <- dim(ts)[1]
+  n <- dim(ts)[2]
+  
+  # if windowSize=0, we only calculate the single layer network
+  if(windowSize==0) {
+    if (type=="full") {
+      corrmat <- rcorr(t(ts[, -c(1:skip, (n-skip+1):n)]), type='pearson')$r
+    }
+    else if (type=="partial") {
+      corrmat <- pcor.shrink(t(ts[, -c(1:skip, (n-skip+1):n)]))
+    }
+    return(corrmat)
+  }
+  
+  # calculate the correlation matrix
+  nwindows <- ceiling(n/windowSize)-2
+  netlist <- list()
+  for (i in 1:nwindows){
+    sp <- windowSize*i+1
+    ep <- windowSize*(i+1)
+    if (type=="full") {
+      corrmat <- rcorr(t(ts[, sp:ep]), type='pearson')$r
+    }
+    else if (type=="partial") {
+      # corrmat <- pcor(t(ts[, sp:ep]))$estimate
+      corrmat <- pcor.shrink(t(ts[, sp:ep]))
+    }
+    matlist[[i]] <- corrmat
+  }
+  return(netlist)
+}
+
+LoadAparc2009 <- function(data_loc, parc_loc, windowSize, rm.endpoint=TRUE, type=c("full", "partial"), skip=10) {
+  
+  # evaluate type
+  type <- match.arg(type)
+  
+  # load parcellation
+  parc <- read.xls(parc_loc, sheet=2)
+  rsn7 <- parc$aparc2009_RSN.7
+  
+  # load data file
+  ts <- as.matrix(read.csv(data_loc, header = FALSE))
+  
+  # remove subcortical and cerebellum
+  rsn7 <- rsn7[-which(rsn7==8)]
+  
+  # get the dimension
+  m <- dim(ts)[1]
+  n <- dim(ts)[2]
+  
+  # if windowSize=0, we only calculate the single layer network
+  if(windowSize==0) {
+    if (type=="full") {
+      corrmat <- rcorr(t(ts[, -c(1:skip, (n-skip+1):n)]), type='pearson')$r
+      corrmat[abs(corrmat) < .5] <- 0
+      corrmat[abs(corrmat) > .5] <- 1
+    }
+    else if (type=="partial") {
+      corrmat <- pcor(t(ts[, -c(1:skip, (n-skip+1):n)]))$estimate
+      corrmat[abs(corrmat) < .1] <- 0
+      corrmat[abs(corrmat) > .1] <- 1
+    }
+    return(network(corrmat, vertex.attr = list(rsn7), vertex.attrnames = list("rsn"), directed=FALSE))
+  }
+  
+  # calculate the correlation matrix
+  nwindows <- ceiling(n/windowSize)-2
+  netlist <- list()
+  for (i in 1:nwindows){
+    sp <- windowSize*i+1
+    ep <- windowSize*(i+1)
+    if (type=="full") {
+      corrmat <- rcorr(t(ts[, sp:ep]), type='pearson')$r
+      corrmat[abs(corrmat) < .5] <- 0
+      corrmat[abs(corrmat) > .5] <- 1
+    }
+    else if (type=="partial") {
+      corrmat <- pcor(t(ts[, sp:ep]))$estimate
+      corrmat[abs(corrmat) < .1] <- 0
+      corrmat[abs(corrmat) > .1] <- 1
+    }
+    netlist[[i]] <- network(corrmat, vertex.attr = list(rsn7), vertex.attrnames = list("rsn"), directed=FALSE)
+  }
+  return(netlist)
+}
+
+LoadGlasser <- function(data_loc, parc_loc, windowSize, rm.endpoint=TRUE, type=c("full", "partial"), fdr=FALSE, skip=10) {
+  
+  # evaluate type
+  type <- match.arg(type)
+  
+  # load parcellation
+  parc <- read.xls(parc_loc, sheet=3)
+  rsn7 <- (parc$glasser_RSN.7)[1:360]
+  rsn17 <- (parc$glasser_RSN.17)[1:360]
+  cenX <- parc$centroid.X[1:360]
+  cenY <- parc$centroid.Y[1:360]
+  cenZ <- parc$centroid.Z[1:360]
+  cen <- rbind(cenX, cenY, cenZ)
+  
+  # load data file
+  ts <- as.matrix(read.csv(data_loc, header = FALSE))
+  
+  # remove subcortical and cerebellum
+  #ts <- ts[which(rsn7<8), ]
+  #rsn7 <- rsn7[rsn7<8]
+  ts <- ts[, -c(1:skip, (dim(ts)[2]-skip+1):dim(ts)[2])]
+  # get the dimension
+  m <- dim(ts)[1]
+  n <- dim(ts)[2]
+  
+  # if windowSize=0, we only calculate the single layer network
+  if(windowSize==0) {
+    corr_list <- rcorr(t(ts), type='pearson')
+    q <- matrix(p.adjust(corr_list$P, method='fdr'), nrow=m)
+    corrmat <- corr_list$r
+    corrmat[q>.05] <- 0
+    diag(corrmat) <- 0
+    return(list(corrmat, rsn7, rsn17, cen))
+  }
+  
+  # calculate the correlation matrix
+  nwindows <- round(n/windowSize)
+  matlist <- list()
+  qs <- round(quantile(1:n, seq(0, 1, length.out = nwindows+1)))
+  for (i in 1:nwindows){
+    sp <- qs[[i]]
+    ep <- qs[[i+1]]-1
+    corr_list <- rcorr(t(ts[, sp:ep]), type='pearson')
+    corrmat <- corr_list$r
+    if(fdr) {
+      q <- matrix(p.adjust(corr_list$P, method='fdr'), nrow=m)
+      corrmat[q>.05] <- 0
+    }
+    diag(corrmat) <- 0
+    matlist[[i]] <- corrmat
+  }
+  return(list(matlist, rsn7, rsn17, cen))
+}
+
+# Convert correlation matrix into network (thresholding)
+convertMST <- function(corrmat, rsn7, rsn17, cen, cost){
+  if(is.list(corrmat)) {
+    n <- dim(corrmat[[1]])[1]
+    glist <- list()
+    for(i in 1:length(corrmat)) {
+      g <- graph_from_adjacency_matrix(corrmat[[i]], mode = "undirected", weighted=TRUE, diag=FALSE)
+      g <- set_vertex_attr(g, "rsn7", value=rsn7)
+      g <- set_edge_attr(g, "id", value=1:ecount(g))
+      mstg <- mst(g, 1/E(g)$weight)
+      diffg <- difference(g, mstg)
+      od <- order(E(diffg)$weight, decreasing = T)[round(cost*n*(n-1)/2-n+2):ecount(diffg)]
+      del_id <- E(diffg)$id[od]
+      osg <- delete_edges(g, del_id)
+      V(osg)$color <- V(osg)$rsn7
+      glist[[i]] <- osg
+    }
+    return(glist)
+  }
+  else {
+    n <- dim(corrmat)[1]
+    g <- graph_from_adjacency_matrix(corrmat, mode = "undirected", weighted=TRUE, diag=FALSE)
+    g <- set_vertex_attr(g, "rsn7", value=rsn7)
+    g <- set_vertex_attr(g, "rsn17", value=rsn17)
+    g <- set_vertex_attr(g, "cen", value=as.list(data.frame(cen)))
+    g <- set_edge_attr(g, "id", value=1:ecount(g))
+    mstg <- mst(g, 1/E(g)$weight)
+    diffg <- difference(g, mstg)
+    od <- order(E(diffg)$weight, decreasing = T)[round(cost*n*(n-1)/2-n+2):ecount(diffg)]
+    del_id <- E(diffg)$id[od]
+    osg <- delete_edges(g, del_id)
+    V(osg)$color <- V(osg)$rsn7
+    return(osg)
+  }
+}
+
+convertSimple <- function(corrmat, rsn7, rsn17, cen, cutoff) {
+  if(is.list(corrmat)) {
+    n <- dim(corrmat[[1]])[1]
+    glist <- list()
+    for(i in 1:length(corrmat)) {
+      corrmat[[i]][corrmat[[i]] < cutoff[i]] <- 0
+      corrmat[[i]][corrmat[[i]] > cutoff[i]] <- 1
+      g <- graph_from_adjacency_matrix(corrmat[[i]], mode = "undirected", diag=FALSE)
+      g <- set_vertex_attr(g, "rsn7", value=rsn7)
+      g <- set_vertex_attr(g, "rsn17", value=rsn17)
+      g <- set_vertex_attr(g, "cen", value=as.list(data.frame(cen)))
+      V(g)$color <- V(g)$rsn7
+      glist[[i]] <- g
+    }
+    return(glist)
+  }
+  else {
+    n <- dim(corrmat)[1]
+    corrmat[corrmat < cutoff[i]] <- 0
+    g <- graph_from_adjacency_matrix(corrmat, mode = "undirected", diag=FALSE)
+    g <- set_vertex_attr(g, "rsn7", value=rsn7)
+    g <- set_vertex_attr(g, "rsn17", value=rsn17)
+    g <- set_vertex_attr(g, "cen", value=as.list(data.frame(cen)))
+    V(g)$color <- V(g)$rsn7
+    return(g)
+  }
+}
+
+iGtoNetwork <- function(g){
+  if(class(g)=="list") {
+    netlist <- list()
+    for(i in 1:length(g)) {
+      adj_mat <- as_adjacency_matrix(g[[i]], attr="weight", sparse = F)
+      netlist[[i]] <- network(adj_mat, vertex.attr = list(rsn7, rsn17, as.list(data.frame(cen))), vertex.attrnames = list("rsn7", "rsn17", "cen"), ignore.eval=FALSE,
+                              names.eval='weight', directed = F)
+    }
+    return(netlist)
+  }
+  else if(class(g) == "igraph") {
+    adj_mat <- as_adjacency_matrix(g, attr="weight", sparse = F)
+    return(network(adj_mat, list(rsn7, rsn17, as.list(data.frame(cen))), vertex.attrnames = list("rsn7", "rsn17", "cen"), ignore.eval=FALSE,
+                   names.eval='weight', directed = F))
+  }
+}
+
+conbineWeight <- function(w1, w2){
+  for (i in 1:length(w1)) {
+    if (is.na(w1[i])) w1[i] <- w2[i]
+  }
+  w1
+}
+
+getNetChanges <- function(g1, g2){
+  rew <- (g1 %m% g2) %u% (g2 %m% g1)
+  rew <- set_vertex_attr(rew, "rsn7", value=vertex_attr(rew, 'rsn7_1'))
+  rew <- set_vertex_attr(rew, "color", value=vertex_attr(rew, 'color_1'))
+  rew <- set_edge_attr(rew, "weight", value=conbineWeight(edge_attr(rew, "weight_1"), edge_attr(rew, "weight_2")))
+  rew <- set_edge_attr(rew, "id", value=conbineWeight(edge_attr(rew, "id_1"), edge_attr(rew, "id_2")))
+  rew
+}
+
+eigen2 <- function(m, cutoff) {
+  m[m >= cutoff] <- 1
+  m[m < cutoff] <- 0
+  tail(eigen(diag(rowSums(m))-m)$values, 2)[1]
+}
+
+GetCutoff <- function(corrmat, prec=1e-4) {
+  L <- 0
+  U <- 1
+  remind <- which(rowSums(corrmat)==0)
+  if (length(remind)!=0) m <- corrmat[-remind, -remind] else m <- corrmat
+  while(U-L>prec) if(eigen2(m, (L+U)/2) < 1e-6) U <- (L+U)/2 else L <- (L+U)/2
+  L
+}
+
+GenNet <- function(subj, sess, windowSize) {
+  n <- strsplit(sess, "_")[[1]]
+  tr <- n[1]
+  task <- n[2]
+  phase <- n[3]
+  data_loc <- paste(data_folder, "/results_SIFT2/", subj, 
+                    "/fMRI/", sess, "/", sess, "_glasser_tseries.csv", sep='')
+  op <- LoadGlasser(data_loc, parc_loc, windowSize, type = "full")
+  cat(sprintf("Scan %s loaded. \n", subj))
+  
+  corrmat <- op[[1]]
+  corrmat <- lapply(corrmat, abs)
+  rsn7 <- op[[2]]
+  rsn17 <- op[[3]]
+  cen <- op[[4]]
+  cutoff <- sapply(corrmat, GetCutoff)
+  net_series <- convertSimple(corrmat, rsn7, rsn17, cen, cutoff)
+  save(net_series, file=paste("../output/raw_net/", subj, "_", sess, ".RData", sep=""))
+}
+
+GenNetSparse <- function(subj) {
+  s <- substr(subj, 9,9)
+  ph <- substr(subj, 7,8)
+  data_loc <- paste(data_folder, "/results_SIFT2/", substr(subj,1,6), 
+                    "/fMRI/rfMRI_REST", s, "_", ph, "/rfMRI_REST", s, "_", ph, "_glasser_tseries.csv", sep='')
+  op <- LoadGlasser(data_loc, parc_loc, windowSize, type = "full")
+  cat(sprintf("Scan %s loaded. \n", subj))
+  
+  corrmat <- op[[1]]
+  corrmat <- lapply(corrmat, abs)
+  rsn7 <- op[[2]]
+  rsn17 <- op[[3]]
+  cen <- op[[4]]
+  net_series <- convertSimple(corrmat, rsn7, rsn17, cen, rep(0.5, length(corrmat)))
+  save(net_series, file=paste("../output/raw_net_sparse/", subj, ".RData", sep=""))
+}
+
+# Generate networks for all subjects
+# output <- LoadGlasser(data_loc, parc_loc, windowSize=windowSize, type="full")
+# matlist <- output[[1]]
+# rsn7 <- output[[2]]
+# nwindows <- length(netlist)
+# nd <- networkDynamic(network.list=netlist)
+# # stergm_control <- control.stergm(CMLE.control = control.ergm(MCMLE.maxit = 100))
+# tergm.fit <- stergm(nd,
+#                     formation= ~edges+gwesp(decay=0.75, fixed=TRUE)+gwdsp(decay=0.75,fixed=TRUE)+gwdegree(decay=0.75, fixed=TRUE)+nodematch("rsn7"),
+#                     dissolution = ~edges+gwesp(decay=0.75, fixed=TRUE)+gwdsp(decay=0.75,fixed=TRUE)+gwdegree(decay=0.75, fixed=TRUE)+nodematch("rsn7"),
+#                     estimate = "CMLE",
+#                     verbose = TRUE)
+# save(tergm.fit, file="partialfit.RData")
