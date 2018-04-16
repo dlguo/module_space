@@ -115,7 +115,7 @@ LoadAparc2009 <- function(data_loc, parc_loc, windowSize, rm.endpoint=TRUE, type
   return(netlist)
 }
 
-LoadGlasser <- function(data_loc, parc_loc, windowSize, rm.endpoint=TRUE, type=c("full", "partial"), fdr=FALSE, skip=10) {
+LoadGlasser <- function(data_loc, parc_loc, windowSize, type=c("full", "partial"), fdr=FALSE, skip=0) {
   
   # evaluate type
   type <- match.arg(type)
@@ -151,13 +151,10 @@ LoadGlasser <- function(data_loc, parc_loc, windowSize, rm.endpoint=TRUE, type=c
   }
   
   # calculate the correlation matrix
-  nwindows <- round(n/windowSize)
+  nwindows <- n-windowSize+1
   matlist <- list()
-  qs <- round(quantile(1:n, seq(0, 1, length.out = nwindows+1)))
   for (i in 1:nwindows){
-    sp <- qs[[i]]
-    ep <- qs[[i+1]]-1
-    corr_list <- rcorr(t(ts[, sp:ep]), type='pearson')
+    corr_list <- rcorr(t(ts[, i:(i+windowSize-1)]), type='pearson')
     corrmat <- corr_list$r
     if(fdr) {
       q <- matrix(p.adjust(corr_list$P, method='fdr'), nrow=m)
@@ -281,7 +278,7 @@ GetCutoff <- function(corrmat, prec=1e-4) {
   L
 }
 
-GenNet <- function(subj, sess, windowSize) {
+GenNet1Comp <- function(subj, sess, windowSize) {
   n <- strsplit(sess, "_")[[1]]
   tr <- n[1]
   task <- n[2]
@@ -301,11 +298,13 @@ GenNet <- function(subj, sess, windowSize) {
   save(net_series, file=paste("../output/raw_net/", subj, "_", sess, ".RData", sep=""))
 }
 
-GenNetSparse <- function(subj) {
-  s <- substr(subj, 9,9)
-  ph <- substr(subj, 7,8)
-  data_loc <- paste(data_folder, "/results_SIFT2/", substr(subj,1,6), 
-                    "/fMRI/rfMRI_REST", s, "_", ph, "/rfMRI_REST", s, "_", ph, "_glasser_tseries.csv", sep='')
+GenNetFixed <- function(subj, sess, cutoff, windowSize) {
+  n <- strsplit(sess, "_")[[1]]
+  tr <- n[1]
+  task <- n[2]
+  phase <- n[3]
+  data_loc <- paste(data_folder, "/results_SIFT2/", subj, 
+                    "/fMRI/", sess, "/", sess, "_glasser_tseries.csv", sep='')
   op <- LoadGlasser(data_loc, parc_loc, windowSize, type = "full")
   cat(sprintf("Scan %s loaded. \n", subj))
   
@@ -314,8 +313,8 @@ GenNetSparse <- function(subj) {
   rsn7 <- op[[2]]
   rsn17 <- op[[3]]
   cen <- op[[4]]
-  net_series <- convertSimple(corrmat, rsn7, rsn17, cen, rep(0.5, length(corrmat)))
-  save(net_series, file=paste("../output/raw_net_sparse/", subj, ".RData", sep=""))
+  net_series <- convertSimple(corrmat, rsn7, rsn17, cen, rep(cutoff, length(corrmat)))
+  save(net_series, file=paste("../output/raw_net/", subj, "_", sess, ".RData", sep=""))
 }
 
 # Generate networks for all subjects

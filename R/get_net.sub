@@ -8,4 +8,4 @@
 module load r
 cd $PBS_O_WORKDIR 
 
-R --vanilla --no-save < brain_abn.R 
+R --vanilla --no-save < main.R 
