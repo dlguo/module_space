@@ -1,5 +1,4 @@
 library(igraph)
-library(plot3Drgl)
 library(Matrix)
 library(ggplot2)
 setwd("~/Dropbox/Projects/module_space/R")
@@ -10,7 +9,7 @@ source("./net_anlys.R")
 MFPTfct <- function(adj) {
   # calculate the mean first-passage time (MFPT) for a fully connected graph from the adjacency matrix
   # note: this function is unable to deal with graphs that are not fully connected
-  
+  # 
   # if the adjacency matrix contains only a single gene, return a 1x1 matrix containing 0
   if (is.null(dim(adj))) return(matrix(0, 1, 1))
   ngenes <- nrow(adj)
@@ -32,10 +31,11 @@ comm <- function(g){
 DiffusionSeries <- function(glist) sapply(glist, GraphMFPT)
 CommSeries <- function(glist) sapply(glist, comm)
 
-subj_list <- c("100408", "101107", "101309", "101915", "103111", "103414")
-task_list <- c("rfMRI_REST1", "tfMRI_EMOTION", "tfMRI_GAMBLING", "tfMRI_LANGUAGE", "tfMRI_MOTOR", "tfMRI_RELATIONAL", "tfMRI_SOCIAL", "tfMRI_WM")
+subj_list <- c('110411', '135932', '136833', '751348')
+# task_list <- c("rfMRI_REST1", "tfMRI_EMOTION", "tfMRI_GAMBLING", "tfMRI_LANGUAGE", "tfMRI_MOTOR", "tfMRI_RELATIONAL", "tfMRI_SOCIAL", "tfMRI_WM")
+task_list <- c("rfMRI_REST1", "rfMRI_REST2")
 M <- data.frame()
-setwd("/home/dali/Dropbox/Projects/17CN/output/raw_net/")
+setwd("/home/dali/Dropbox/Projects/module_space/output/raw_net/")
 for(s in subj_list){
   for(task in task_list){
     load(paste(s, task, "LR.RData", sep='_'))
@@ -52,16 +52,24 @@ for (x in 3:18) {
   M[,x] <- as.numeric(as.character(M[,x]))
 }
 
-ggplot(M, aes(x=visual_den, y=DMN_den, shape=subject, color=task))+geom_point()+geom_path() + xlim(0,1) + ylim(0,1) + coord_fixed()
-ggplot(M[M[,1]=="103414",], aes(x=fp_den, y=DMN_den, color=task))+geom_point()+geom_path() + xlim(0,1) + ylim(0,1) + coord_fixed()
-ggplot(M[M[,2]=="tfMRI_RELATIONAL",], aes(x=visual_den, y=DMN_den, color=subject))+geom_point()+geom_path() + xlim(0,1) + ylim(0,1) + coord_fixed()
+plot(1:dim(data)[1], M$dorsal_den, type='l')
+ggplot(M, aes(x=fp_den, y=dorsal_den, shape=subject, color=task))+geom_path() + xlim(0,1) + ylim(0,1) + coord_fixed()
+p1 <- ggplot(M[M[,1]=="135932",], aes(x=fp_den, y=dorsal_den, color=task))+geom_path() + xlim(0,1) + ylim(0,1) + coord_fixed() + ggtitle("Subject 135932")
+p2 <- ggplot(M[M[,1]=="110411",], aes(x=fp_den, y=dorsal_den, color=task))+geom_path() + xlim(0,1) + ylim(0,1) + coord_fixed() + ggtitle("Subject 110411")
+p3 <- ggplot(M[M[,1]=="136833",], aes(x=fp_den, y=dorsal_den, color=task))+geom_path() + xlim(0,1) + ylim(0,1) + coord_fixed() + ggtitle("Subject 136833")
+p4 <- ggplot(M[M[,1]=="751348",], aes(x=fp_den, y=dorsal_den, color=task))+geom_path() + xlim(0,1) + ylim(0,1) + coord_fixed() + ggtitle("Subject 751348")
+multiplot(p1, p2, p3, p4, cols = 2)
+ggplot(M[M[,2]=="rfMRI_REST1",], aes(x=visual_den, y=DMN_den, color=subject))+geom_path() + xlim(0,1) + ylim(0,1) + coord_fixed()
 ggplot(M[M[,1]=="101915" & M[,2]=="tfMRI_MOTOR",], aes(x=dorsal_den, y=motor_den, color=task))+geom_point()+geom_path() + xlim(0,1) + ylim(0,1) + coord_fixed()
 
 # Plotly
 library(plotly)
-data <- M[M[,2]=="tfMRI_MOTOR",]
-p <- plot_ly(data, x=~visual_den, y=~fp_den, z=rep(1:(dim(data)[1]/6), 6), type = 'scatter3d', mode = 'lines', opacity = 1, color=~subject, line = list(width = 6, reverscale = FALSE))
+data <- M[M[,2]=="rfMRI_REST1",]
+p <- plot_ly(data, x=~fp_den, y=~dorsal_den, z=rep(1:(dim(data)[1]/length(subj_list)), length(subj_list)), type = 'scatter3d', mode = 'lines', opacity = 1, color=~subject, line = list(width = 6, reverscale = FALSE))
+
+data <- M[M[,2]=="rfMRI_REST1" & M[,1]=='135932',]
+p <- plot_ly(data, x=~fp_den, y=~dorsal_den, z=1:(dim(data)[1]), type = 'scatter3d', mode = 'lines', opacity = 1, line = list(width = 6, reverscale = FALSE))
 p
 
-chart_link = api_create(p, filename="motor")
+chart_link = api_create(p, filename="fp_dorsal_one")
 # chart_link

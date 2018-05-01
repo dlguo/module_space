@@ -215,6 +215,7 @@ convertSimple <- function(corrmat, rsn7, rsn17, cen, cutoff) {
       g <- set_vertex_attr(g, "cen", value=as.list(data.frame(cen)))
       V(g)$color <- V(g)$rsn7
       glist[[i]] <- g
+      # if(i %% 20 == 0) cat('20 complets\n')
     }
     return(glist)
   }
@@ -303,8 +304,13 @@ GenNetFixed <- function(subj, sess, cutoff, windowSize) {
   tr <- n[1]
   task <- n[2]
   phase <- n[3]
-  data_loc <- paste(data_folder, "/results_SIFT2/", subj, 
-                    "/fMRI/", sess, "/", sess, "_glasser_tseries.csv", sep='')
+  if(substr(sess, 1, 1) == "r") {
+    data_loc <- paste(data_folder, "/results_SIFT2/", subj, 
+                    "/fMRI/", sess, "/", sess, "_glasser_GS_bp_z_tseries.csv", sep='')
+  } else {
+    data_loc <- paste(data_folder, "/results_SIFT2/", subj, 
+                    "/fMRI/", sess, "/", sess, "_glasser_GS_z_tseries.csv", sep='')
+  }
   op <- LoadGlasser(data_loc, parc_loc, windowSize, type = "full")
   cat(sprintf("Scan %s loaded. \n", subj))
   
