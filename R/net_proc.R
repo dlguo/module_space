@@ -299,7 +299,7 @@ GenNet1Comp <- function(subj, sess, windowSize) {
   save(net_series, file=paste("../output/raw_net/", subj, "_", sess, ".RData", sep=""))
 }
 
-GenNetFixed <- function(subj, sess, cutoff, windowSize) {
+GenNetFixedGS <- function(subj, sess, cutoff, windowSize) {
   n <- strsplit(sess, "_")[[1]]
   tr <- n[1]
   task <- n[2]
@@ -323,6 +323,29 @@ GenNetFixed <- function(subj, sess, cutoff, windowSize) {
   save(net_series, file=paste("../output/raw_net/", subj, "_", sess, ".RData", sep=""))
 }
 
+GenNetFixed <- function(subj, sess, cutoff, windowSize) {
+  n <- strsplit(sess, "_")[[1]]
+  tr <- n[1]
+  task <- n[2]
+  phase <- n[3]
+  if(substr(sess, 1, 1) == "r") {
+    data_loc <- paste(data_folder, "/results_SIFT2/", subj, 
+                    "/fMRI/", sess, "/", sess, "_glasser_GS_bp_z_tseries.csv", sep='')
+  } else {
+    data_loc <- paste(data_folder, "/results_SIFT2/", subj, 
+                    "/fMRI/", sess, "/", sess, "_glasser_GS_z_tseries.csv", sep='')
+  }
+  op <- LoadGlasser(data_loc, parc_loc, windowSize, type = "full")
+  cat(sprintf("Scan %s loaded. \n", subj))
+  
+  corrmat <- op[[1]]
+  corrmat <- lapply(corrmat, abs)
+  rsn7 <- op[[2]]
+  rsn17 <- op[[3]]
+  cen <- op[[4]]
+  net_series <- convertSimple(corrmat, rsn7, rsn17, cen, rep(cutoff, length(corrmat)))
+  save(net_series, file=paste("../output/raw_net/", subj, "_", sess, ".RData", sep=""))
+}
 # Generate networks for all subjects
 # output <- LoadGlasser(data_loc, parc_loc, windowSize=windowSize, type="full")
 # matlist <- output[[1]]
