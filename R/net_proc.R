@@ -12,116 +12,12 @@ require(corpcor)
 require(gdata)
 
 # file loading function (convert to correlation matrix)
-LoadAparcAseg <- function(data_loc, parc_loc, windowSize, rm.endpoint=TRUE, type=c("full", "partial"), skip=10) {
+LoadGlasser <- function(data_loc, parc, windowSize, type=c("full", "partial"), fdr=FALSE, skip=0) {
   
   # evaluate type
   type <- match.arg(type)
   
   # load parcellation
-  parc <- read.xls(parc_loc, sheet=1)
-  rsn7 <- parc$aparc_aseg_RSN.7
-  
-  # load data file
-  ts <- as.matrix(read.csv(data_loc, header = FALSE))
-  
-  # remove subcortical and cerebellum
-  rsn7 <- rsn7[-which(rsn7==8)]
-  
-  # get the dimension
-  m <- dim(ts)[1]
-  n <- dim(ts)[2]
-  
-  # if windowSize=0, we only calculate the single layer network
-  if(windowSize==0) {
-    if (type=="full") {
-      corrmat <- rcorr(t(ts[, -c(1:skip, (n-skip+1):n)]), type='pearson')$r
-    }
-    else if (type=="partial") {
-      corrmat <- pcor.shrink(t(ts[, -c(1:skip, (n-skip+1):n)]))
-    }
-    return(corrmat)
-  }
-  
-  # calculate the correlation matrix
-  nwindows <- ceiling(n/windowSize)-2
-  netlist <- list()
-  for (i in 1:nwindows){
-    sp <- windowSize*i+1
-    ep <- windowSize*(i+1)
-    if (type=="full") {
-      corrmat <- rcorr(t(ts[, sp:ep]), type='pearson')$r
-    }
-    else if (type=="partial") {
-      # corrmat <- pcor(t(ts[, sp:ep]))$estimate
-      corrmat <- pcor.shrink(t(ts[, sp:ep]))
-    }
-    matlist[[i]] <- corrmat
-  }
-  return(netlist)
-}
-
-LoadAparc2009 <- function(data_loc, parc_loc, windowSize, rm.endpoint=TRUE, type=c("full", "partial"), skip=10) {
-  
-  # evaluate type
-  type <- match.arg(type)
-  
-  # load parcellation
-  parc <- read.xls(parc_loc, sheet=2)
-  rsn7 <- parc$aparc2009_RSN.7
-  
-  # load data file
-  ts <- as.matrix(read.csv(data_loc, header = FALSE))
-  
-  # remove subcortical and cerebellum
-  rsn7 <- rsn7[-which(rsn7==8)]
-  
-  # get the dimension
-  m <- dim(ts)[1]
-  n <- dim(ts)[2]
-  
-  # if windowSize=0, we only calculate the single layer network
-  if(windowSize==0) {
-    if (type=="full") {
-      corrmat <- rcorr(t(ts[, -c(1:skip, (n-skip+1):n)]), type='pearson')$r
-      corrmat[abs(corrmat) < .5] <- 0
-      corrmat[abs(corrmat) > .5] <- 1
-    }
-    else if (type=="partial") {
-      corrmat <- pcor(t(ts[, -c(1:skip, (n-skip+1):n)]))$estimate
-      corrmat[abs(corrmat) < .1] <- 0
-      corrmat[abs(corrmat) > .1] <- 1
-    }
-    return(network(corrmat, vertex.attr = list(rsn7), vertex.attrnames = list("rsn"), directed=FALSE))
-  }
-  
-  # calculate the correlation matrix
-  nwindows <- ceiling(n/windowSize)-2
-  netlist <- list()
-  for (i in 1:nwindows){
-    sp <- windowSize*i+1
-    ep <- windowSize*(i+1)
-    if (type=="full") {
-      corrmat <- rcorr(t(ts[, sp:ep]), type='pearson')$r
-      corrmat[abs(corrmat) < .5] <- 0
-      corrmat[abs(corrmat) > .5] <- 1
-    }
-    else if (type=="partial") {
-      corrmat <- pcor(t(ts[, sp:ep]))$estimate
-      corrmat[abs(corrmat) < .1] <- 0
-      corrmat[abs(corrmat) > .1] <- 1
-    }
-    netlist[[i]] <- network(corrmat, vertex.attr = list(rsn7), vertex.attrnames = list("rsn"), directed=FALSE)
-  }
-  return(netlist)
-}
-
-LoadGlasser <- function(data_loc, parc_loc, windowSize, type=c("full", "partial"), fdr=FALSE, skip=0) {
-  
-  # evaluate type
-  type <- match.arg(type)
-  
-  # load parcellation
-  parc <- read.xls(parc_loc, sheet=3)
   rsn7 <- (parc$glasser_RSN.7)[1:360]
   rsn17 <- (parc$glasser_RSN.17)[1:360]
   cenX <- parc$centroid.X[1:360]
@@ -299,19 +195,19 @@ GenNet1Comp <- function(subj, sess, windowSize) {
   save(net_series, file=paste("../output/raw_net/", subj, "_", sess, ".RData", sep=""))
 }
 
-GenNetFixedGS <- function(subj, sess, cutoff, windowSize) {
+GenNetFixedGS <- function(subj, sess, parc_file, cutoff, windowSize) {
   n <- strsplit(sess, "_")[[1]]
   tr <- n[1]
   task <- n[2]
   phase <- n[3]
   if(substr(sess, 1, 1) == "r") {
     data_loc <- paste(data_folder, "/results_SIFT2/", subj, 
-                    "/fMRI/", sess, "/", sess, "_glasser_GS_bp_z_tseries.csv", sep='')
+                    "/fMRI/", sess, "/", sess, "_glasser_GS_bp_tseries.csv", sep='')
   } else {
     data_loc <- paste(data_folder, "/results_SIFT2/", subj, 
-                    "/fMRI/", sess, "/", sess, "_glasser_GS_z_tseries.csv", sep='')
+                    "/fMRI/", sess, "/", sess, "_glasser_GS_tseries.csv", sep='')
   }
-  op <- LoadGlasser(data_loc, parc_loc, windowSize, type = "full")
+  op <- LoadGlasser(data_loc, parc_file, windowSize, type = "full")
   cat(sprintf("Scan %s loaded. \n", subj))
   
   corrmat <- op[[1]]
@@ -320,22 +216,17 @@ GenNetFixedGS <- function(subj, sess, cutoff, windowSize) {
   rsn17 <- op[[3]]
   cen <- op[[4]]
   net_series <- convertSimple(corrmat, rsn7, rsn17, cen, rep(cutoff, length(corrmat)))
-  save(net_series, file=paste("../output/raw_net/", subj, "_", sess, ".RData", sep=""))
+  save(net_series, file=paste("../output/raw_net_GS/", subj, "_", sess, ".RData", sep=""))
 }
 
-GenNetFixed <- function(subj, sess, cutoff, windowSize) {
+GenNetFixed <- function(subj, sess, parc_file, cutoff, windowSize) {
   n <- strsplit(sess, "_")[[1]]
   tr <- n[1]
   task <- n[2]
   phase <- n[3]
-  if(substr(sess, 1, 1) == "r") {
-    data_loc <- paste(data_folder, "/results_SIFT2/", subj, 
-                    "/fMRI/", sess, "/", sess, "_glasser_GS_bp_z_tseries.csv", sep='')
-  } else {
-    data_loc <- paste(data_folder, "/results_SIFT2/", subj, 
-                    "/fMRI/", sess, "/", sess, "_glasser_GS_z_tseries.csv", sep='')
-  }
-  op <- LoadGlasser(data_loc, parc_loc, windowSize, type = "full")
+  data_loc <- paste(data_folder, "/results_SIFT2/", subj, 
+                    "/fMRI/", sess, "/", sess, "_glasser_tseries.csv", sep='')
+  op <- LoadGlasser(data_loc, parc_file, windowSize, type = "full")
   cat(sprintf("Scan %s loaded. \n", subj))
   
   corrmat <- op[[1]]

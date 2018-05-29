@@ -11,15 +11,18 @@ set.seed(2)
 
 data_folder <- Sys.getenv("DATA")
 windowSize <- 360
+cutoff <- .4
 cost <- .04
 skip <- 10
 
 subj_list <- list.dirs(paste(data_folder, "results_SIFT2", sep = '/'), recursive = F, full.names = F)
 parc_loc <- paste(data_folder, "Table_HCP_20170502.xls", sep='/')
+parc_file <- read.xls(parc_loc, sheet=3)
+
 
 GetNets <- function(sess, windowSize) {
   for (subj in subj_list) {
-    GenNetFixed(subj, sess, .4, windowSize)
+    GenNetFixedGS(subj, sess, parc_file, cutoff, windowSize)
   }
 }
 
@@ -41,17 +44,18 @@ abn <- function(subj, sess) {
   #save(SynthesizeNets, file=paste("../output/SynthesizeNets/", subj, "_", sess, ".RData", sep=""))
 }
 
-GetNets("rfMRI_REST2_LR", 360)
-GetNets("tfMRI_EMOTION_LR", 360)
+GetNets("rfMRI_REST1_LR", 360)
+# GetNets("rfMRI_REST2_LR", 360)
+# GetNets("tfMRI_EMOTION_LR", 360)
 #GetNets("tfMRI_GAMBLING_LR", 20)
 #GetNets("tfMRI_MOTOR_LR", 20)
 #GetNets("tfMRI_RELATIONAL_LR", 20)
 #GetNets("tfMRI_SOCIAL_LR", 20)
-GetNets("tfMRI_WM_LR", 300)
+# GetNets("tfMRI_WM_LR", 300)
 #GetNets("tfMRI_LANGUAGE_LR", 20)
 
-args = commandArgs(trailingOnly=TRUE)
-abn(args[1], args[2])
+# args = commandArgs(trailingOnly=TRUE)
+# abn(args[1], args[2])
 
 # no_cores <- detectCores()
 # cl <- makeCluster(no_cores, type="FORK", outfile="debug140.txt")
