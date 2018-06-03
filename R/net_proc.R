@@ -127,23 +127,6 @@ convertSimple <- function(corrmat, rsn7, rsn17, cen, cutoff) {
   }
 }
 
-iGtoNetwork <- function(g){
-  if(class(g)=="list") {
-    netlist <- list()
-    for(i in 1:length(g)) {
-      adj_mat <- as_adjacency_matrix(g[[i]], attr="weight", sparse = F)
-      netlist[[i]] <- network(adj_mat, vertex.attr = list(rsn7, rsn17, as.list(data.frame(cen))), vertex.attrnames = list("rsn7", "rsn17", "cen"), ignore.eval=FALSE,
-                              names.eval='weight', directed = F)
-    }
-    return(netlist)
-  }
-  else if(class(g) == "igraph") {
-    adj_mat <- as_adjacency_matrix(g, attr="weight", sparse = F)
-    return(network(adj_mat, list(rsn7, rsn17, as.list(data.frame(cen))), vertex.attrnames = list("rsn7", "rsn17", "cen"), ignore.eval=FALSE,
-                   names.eval='weight', directed = F))
-  }
-}
-
 conbineWeight <- function(w1, w2){
   for (i in 1:length(w1)) {
     if (is.na(w1[i])) w1[i] <- w2[i]
@@ -247,5 +230,48 @@ GetNetsGS <- function(sess, windowSize) {
 GetNets <- function(sess, windowSize) {
   for (subj in subj_list) {
     GenNetFixed(subj, sess, parc_file, cutoff, windowSize)
+  }
+}
+
+# Convert between igraph and networks
+iG2Net <- function(g){
+  if(class(g)=="list") {
+    rsn7 <- V(g[[1]])$rsn7
+    rsn17 <- V(g[[1]])$rsn17
+    cen <- V(g[[1]])$cen
+    netlist <- list()
+    for(i in 1:length(g)) {
+      adj_mat <- as_adjacency_matrix(g[[i]], sparse = F)
+      netlist[[i]] <- network(adj_mat, vertex.attr = list(rsn7, rsn17, as.list(data.frame(cen))), vertex.attrnames = list("rsn7", "rsn17", "cen"), directed = F)
+    }
+    return(netlist)
+  }
+  else if(class(g) == "igraph") {
+    rsn7 <- V(g)$rsn7
+    rsn17 <- V(g)$rsn17
+    cen <- V(g)$cen
+    adj_mat <- as_adjacency_matrix(g, sparse = F)
+    return(network(adj_mat, list(rsn7, rsn17, as.list(data.frame(cen))), vertex.attrnames = list("rsn7", "rsn17", "cen"), directed = F))
+  }
+}
+
+Net2iG <- function(net) {
+  if(class(net)=="list") {
+    rsn7 <- get.vertex.attribute(net[[1]], 'rsn7')
+    netlist <- list()
+    for (i in length(net)) {
+      adj_mat <- as.matrix.network(net[[i]])
+      g <- graph_from_adjacency_matrix(adj_mat, mode='undirected')
+      g <- set_vertex_attr(g, "rsn7", value=rsn7)
+      netlist[[i]] <- g
+    }
+    netlist
+  }
+  if(class(net)=="network") {
+    rsn7 <- get.vertex.attribute(net, 'rsn7')
+    adj_mat <- as.matrix.network(net)
+    g <- graph_from_adjacency_matrix(adj_mat, mode='undirected')
+    g <- set_vertex_attr(g, "rsn7", value=rsn7)
+    return(g)
   }
 }
