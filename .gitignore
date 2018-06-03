@@ -38,3 +38,6 @@ docs/
 output/
 .vscode/
 .Rproj.user
+
+# Test code
+R/test.R
