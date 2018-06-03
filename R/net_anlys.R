@@ -69,6 +69,25 @@ InvGeoDist <- function(g, node) 1/gd(g, node)
 InvIsRSN7 <- function(g, node) 1-IsRSN7(g, node)
 InvIsRSN17 <- function(g, node) 1-IsRSN17(g, node)
 InvLocalEff <- function(g) 1/(LocalEff(g)+0.001)
+MFPTfct <- function(adj) {
+  # calculate the mean first-passage time (MFPT) for a fully connected graph from the adjacency matrix
+  # note: this function is unable to deal with graphs that are not fully connected
+  # 
+  # if the adjacency matrix contains only a single gene, return a 1x1 matrix containing 0
+  if (is.null(dim(adj))) return(matrix(0, 1, 1))
+  ngenes <- nrow(adj)
+  
+  A <- adj / apply(adj, 1, sum)  # A: the transition probability matrix (there is always movement)
+  I <- Diagonal(x=rep(as.integer(1), ngenes))
+  pi <- as.numeric(rep(1/ngenes, ngenes) %*% solve(I - A + 1 / ngenes)) # pi: the stationary distribution of the transition matrix
+  Z <- solve(t(t(I - A) - pi))
+  as.matrix(t(t(I - Z) + Z[cbind(1:nrow(Z), 1:nrow(Z))]) %*% (I * (1 / pi))) # M: the mean first passage matrix
+}
+GraphMFPT <- function(g) MFPTfct(as_adjacency_matrix(g))
+GlobalEff <- function(g){
+  D <- distances(g)
+  mean(1/D[lower.tri(D)])
+}
 
 
 # Network series statistics function
@@ -96,3 +115,5 @@ KStestSeries <- function(g1, g2, f) {
   for(i in 1:length(g1)) ksd <- c(ksd, ks.test(f(g1[[i]]), f(g2[[i]]))$statistic[[1]])
   ksd
 }
+DiffusionSeries <- function(glist) sapply(glist, GraphMFPT)
+GlobalEffSeries <- function(glist) sapply(glist, GlobalEff)

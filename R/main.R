@@ -19,31 +19,6 @@ subj_list <- list.dirs(paste(data_folder, "results_SIFT2", sep = '/'), recursive
 parc_loc <- paste(data_folder, "Table_HCP_20170502.xls", sep='/')
 parc_file <- read.xls(parc_loc, sheet=3)
 
-
-GetNets <- function(sess, windowSize) {
-  for (subj in subj_list) {
-    GenNetFixedGS(subj, sess, parc_file, cutoff, windowSize)
-  }
-}
-
-abn <- function(subj, sess) {
-  # act_mat_list <- list()
-  # SynthesizeNets_list <- list()
-  load(paste("../output/raw_net/", subj, "_", sess, ".RData", sep=""))
-  global_f <- c(igraph::degree,
-                InvClusterCoeff,
-                cl,
-                betweenness,
-                LocalEff)
-  local_f <- c(IsRSN7)
-  act_mat <- EstimateActMat(net_series, global_f, local_f, allow_low = T)
-  cat(paste(Sys.time(), "estimation done for", subj, sess), sep="\n", file="../output/msg.txt", append=T)
-  save(act_mat, file=paste("../output/act_mat/", subj, "_", sess, ".RData", sep=""))
-  #SynthesizeNets <- SynthesizeNets(net_series[[1]], length(net_series), global_f, local_f, act_mat)
-  #cat(paste(Sys.time(), "synthesization done for", subj, sess), sep="\n", file="../output/msg.txt", append=T)
-  #save(SynthesizeNets, file=paste("../output/SynthesizeNets/", subj, "_", sess, ".RData", sep=""))
-}
-
 GetNets("rfMRI_REST1_LR", 360)
 # GetNets("rfMRI_REST2_LR", 360)
 # GetNets("tfMRI_EMOTION_LR", 360)

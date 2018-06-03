@@ -237,16 +237,15 @@ GenNetFixed <- function(subj, sess, parc_file, cutoff, windowSize) {
   net_series <- convertSimple(corrmat, rsn7, rsn17, cen, rep(cutoff, length(corrmat)))
   save(net_series, file=paste("../output/raw_net/", subj, "_", sess, ".RData", sep=""))
 }
-# Generate networks for all subjects
-# output <- LoadGlasser(data_loc, parc_loc, windowSize=windowSize, type="full")
-# matlist <- output[[1]]
-# rsn7 <- output[[2]]
-# nwindows <- length(netlist)
-# nd <- networkDynamic(network.list=netlist)
-# # stergm_control <- control.stergm(CMLE.control = control.ergm(MCMLE.maxit = 100))
-# tergm.fit <- stergm(nd,
-#                     formation= ~edges+gwesp(decay=0.75, fixed=TRUE)+gwdsp(decay=0.75,fixed=TRUE)+gwdegree(decay=0.75, fixed=TRUE)+nodematch("rsn7"),
-#                     dissolution = ~edges+gwesp(decay=0.75, fixed=TRUE)+gwdsp(decay=0.75,fixed=TRUE)+gwdegree(decay=0.75, fixed=TRUE)+nodematch("rsn7"),
-#                     estimate = "CMLE",
-#                     verbose = TRUE)
-# save(tergm.fit, file="partialfit.RData")
+
+GetNetsGS <- function(sess, windowSize) {
+  for (subj in subj_list) {
+    GenNetFixedGS(subj, sess, parc_file, cutoff, windowSize)
+  }
+}
+
+GetNets <- function(sess, windowSize) {
+  for (subj in subj_list) {
+    GenNetFixed(subj, sess, parc_file, cutoff, windowSize)
+  }
+}

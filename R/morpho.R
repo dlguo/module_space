@@ -6,34 +6,10 @@ source("./net_proc.R")
 source("./net_anlys.R")
 
 
-MFPTfct <- function(adj) {
-  # calculate the mean first-passage time (MFPT) for a fully connected graph from the adjacency matrix
-  # note: this function is unable to deal with graphs that are not fully connected
-  # 
-  # if the adjacency matrix contains only a single gene, return a 1x1 matrix containing 0
-  if (is.null(dim(adj))) return(matrix(0, 1, 1))
-  ngenes <- nrow(adj)
-  
-  A <- adj / apply(adj, 1, sum)  # A: the transition probability matrix (there is always movement)
-  I <- Diagonal(x=rep(as.integer(1), ngenes))
-  pi <- as.numeric(rep(1/ngenes, ngenes) %*% solve(I - A + 1 / ngenes)) # pi: the stationary distribution of the transition matrix
-  Z <- solve(t(t(I - A) - pi))
-  as.matrix(t(t(I - Z) + Z[cbind(1:nrow(Z), 1:nrow(Z))]) %*% (I * (1 / pi))) # M: the mean first passage matrix
-}
-
-GraphMFPT <- function(g) MFPTfct(as_adjacency_matrix(g))
-
-comm <- function(g){
-  D <- shortest.paths(g)
-  mean(1/D[lower.tri(D)])
-}
-
-DiffusionSeries <- function(glist) sapply(glist, GraphMFPT)
-CommSeries <- function(glist) sapply(glist, comm)
-
+###### Test for module density comparison ######
 subj_list <- c('110411', '135932', '136833', '751348')
-# task_list <- c("rfMRI_REST1", "tfMRI_EMOTION", "tfMRI_GAMBLING", "tfMRI_LANGUAGE", "tfMRI_MOTOR", "tfMRI_RELATIONAL", "tfMRI_SOCIAL", "tfMRI_WM")
 task_list <- c("rfMRI_REST1", "rfMRI_REST2")
+
 M <- data.frame()
 setwd("/home/dali/Dropbox/Projects/module_space/output/raw_net/")
 for(s in subj_list){
@@ -64,6 +40,7 @@ ggplot(M[M[,1]=="101915" & M[,2]=="tfMRI_MOTOR",], aes(x=dorsal_den, y=motor_den
 
 # Plotly
 library(plotly)
+library(statnet)
 data <- M[M[,2]=="rfMRI_REST1",]
 p <- plot_ly(data, x=~fp_den, y=~dorsal_den, z=rep(1:(dim(data)[1]/length(subj_list)), length(subj_list)), type = 'scatter3d', mode = 'lines', opacity = 1, color=~subject, line = list(width = 6, reverscale = FALSE))
 
@@ -72,4 +49,89 @@ p <- plot_ly(data, x=~fp_den, y=~dorsal_den, z=1:(dim(data)[1]), type = 'scatter
 p
 
 chart_link = api_create(p, filename="fp_dorsal_one")
-# chart_link
+###### Module comparison ends ######
+
+
+
+###### Compare modularity and global efficiency ######
+# Function area
+GetGlobalEffAndMod <- function(all_nets){
+  subj_list <- names(all_nets)
+  M <- data.frame(NULL)
+  l_time <- length(all_nets[[1]])
+  for (subj in subj_list) {
+    net <- all_nets[[subj]]
+    l_time <- length(net)
+    m <- data.frame(subject=rep(subj, l_time))
+    m <- cbind(m, global_eff=GlobalEffSeries(net))
+    m <- cbind(m, modularity=ModuleSeries(net))
+    M <- rbind(M, m)
+  }
+  M
+}
+
+GetCommunity <- function(g){
+  gmod <- cluster_fast_greedy(g)$membership
+  set_vertex_attr(g, 'rsn7', value=gmod)
+}
+# Function area ends
+
+subj_list <- c('105014', '103818', '103414', '103111', '101915', '101309', '101107', '100408')
+all_nets <- list()
+for (subj in subj_list) {
+  load(paste("/home/dali/Dropbox/Projects/module_space/output/raw_net_GS/", subj, "_rfMRI_REST1_LR.RData", sep=''))
+  all_nets[[subj]] <- net_series
+}
+M <- GetGlobalEffAndMod(all_nets)
+ggplot(M, aes(x=global_eff, y=modularity, color=subject))+geom_path() + xlim(0.25,.75) + ylim(0,.5) + coord_fixed()
+
+# Compare Email networks
+karate_graph <- read_graph("/data/karate/karate.gml", format='gml')
+karate_graph <- GetCommunity(karate_graph)
+ggplot(M, aes(x=global_eff, y=modularity, color=subject))+geom_path() + xlim(0.25,.75) + ylim(0,.5) + coord_fixed() + 
+  geom_point(aes(x=GlobalEff(karate_graph), y=modularity(karate_graph, V(karate_graph)$rsn7)))
+
+# Compare Dolphin social networks
+dolphin_graph <- read_graph("/data/dolphin/dolphins.gml", format='gml')
+dolphin_graph <- GetCommunity(dolphin_graph)
+ggplot(M, aes(x=global_eff, y=modularity, color=subject))+geom_path() + xlim(0,1) + ylim(0,1) + coord_fixed() + 
+  geom_point(aes(x=GlobalEff(karate_graph), y=modularity(karate_graph, V(karate_graph)$rsn7)), colour='red') + 
+  geom_point(aes(x=GlobalEff(dolphin_graph), y=modularity(dolphin_graph, V(dolphin_graph)$rsn7)), colour='blue')
+
+# Compare with ER graphs
+for (count in 1:100) {
+  g <- erdos.renyi.game(360, p=.05)
+}
+
+# Get some ERGM nets
+library(ergm)
+library(tergm)
+library(intergraph)
+subj <- sample(subj_list,1)
+net <- all_nets[[subj]]
+
+Msim <- data.frame(NULL)
+for (subj in subj_list) {
+  net <- all_nets[[subj]]
+  msim <- NULL
+  for (single_net in net) {
+    g <- erdos.renyi.game(360, p=graph.density(single_net))
+    g <- GetCommunity(g)
+    msim <- rbind(msim, c(GlobalEff(g), modularity(g, V(g)$rsn7)))
+  }
+  Msim <- rbind(Msim, cbind(subject=rep(paste(subj, 'sim', sep = '_')), global_eff=as.numeric(msim[,1]), modularity=msim[,2]))
+}
+
+Msim$global_eff <- as.numeric(as.character(Msim$global_eff))
+Msim$modularity <- as.numeric(as.character(Msim$modularity))
+
+ggplot(M, aes(x=global_eff, y=modularity, color=subject))+geom_path() + xlim(0.25, .75) + ylim(0,.5) + coord_fixed() + 
+  geom_point(aes(x=GlobalEff(karate_graph), y=modularity(karate_graph, V(karate_graph)$rsn7)), colour='red') + 
+  geom_point(aes(x=GlobalEff(dolphin_graph), y=modularity(dolphin_graph, V(dolphin_graph)$rsn7)), colour='blue') +
+  geom_point(data=Msim, aes(x=global_eff, y=modularity),alpha=.1, size=.1)
+
+ggplot(M, aes(x=global_eff, y=modularity, color=subject))+geom_path() + xlim(0.5, .7) + ylim(0,.2) + coord_fixed() + 
+  geom_point(aes(x=GlobalEff(karate_graph), y=modularity(karate_graph, V(karate_graph)$rsn7)), colour='red') + 
+  geom_point(aes(x=GlobalEff(dolphin_graph), y=modularity(dolphin_graph, V(dolphin_graph)$rsn7)), colour='blue') +
+  geom_point(data=Msim, aes(x=global_eff, y=modularity),alpha=.1, size=.3)
+
