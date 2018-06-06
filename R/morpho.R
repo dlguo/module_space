@@ -98,6 +98,23 @@ ggplot(M, aes(x=global_eff, y=modularity, color=subject))+geom_path() + xlim(0,1
   geom_point(aes(x=GlobalEff(karate_graph), y=modularity(karate_graph, V(karate_graph)$rsn7)), colour='red') + 
   geom_point(aes(x=GlobalEff(dolphin_graph), y=modularity(dolphin_graph, V(dolphin_graph)$rsn7)), colour='blue')
 
+# Compare the stock price networks
+library(quantmod)
+sp500_list <- read.csv("/home/dali/Desktop/sp500.csv", header = T)
+start <- as.Date("2016-01-01")
+end <- as.Date(Sys.Date())
+all_prices <- NULL
+all_companies <- NULL
+for (company in sp500_list$Symbol) {
+  stock_price <- loadSymbols(company, from=start, to=end, auto.assign = F)[,6]
+  if (length(stock_price)==610 && !anyNA(stock_price)) {
+    all_companies <- c(all_companies, company)
+    all_prices <- rbind(all_prices, as.numeric(stock_price))
+  }
+}
+rsn7 <- sp500_list[sp500_list[,1] %in% all_companies, ]$Sector
+
+
 # Compare with ER graphs
 for (count in 1:100) {
   g <- erdos.renyi.game(360, p=.05)
@@ -131,7 +148,5 @@ ggplot(M, aes(x=global_eff, y=modularity, color=subject))+geom_path() + xlim(0.2
   geom_point(data=Msim, aes(x=global_eff, y=modularity),alpha=.1, size=.1)
 
 ggplot(M, aes(x=global_eff, y=modularity, color=subject))+geom_path() + xlim(0.5, .7) + ylim(0,.2) + coord_fixed() + 
-  geom_point(aes(x=GlobalEff(karate_graph), y=modularity(karate_graph, V(karate_graph)$rsn7)), colour='red') + 
-  geom_point(aes(x=GlobalEff(dolphin_graph), y=modularity(dolphin_graph, V(dolphin_graph)$rsn7)), colour='blue') +
   geom_point(data=Msim, aes(x=global_eff, y=modularity),alpha=.1, size=.3)
 
