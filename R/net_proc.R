@@ -7,8 +7,8 @@
 
 require(igraph)
 require(Hmisc)
-require(ppcor)
-require(corpcor)
+# require(ppcor)
+# require(corpcor)
 require(gdata)
 
 # file loading function (convert to correlation matrix)
@@ -60,6 +60,32 @@ LoadGlasser <- function(data_loc, parc, windowSize, type=c("full", "partial"), f
     matlist[[i]] <- corrmat
   }
   return(list(matlist, rsn7, rsn17, cen))
+}
+
+GetGlasserNets <- function(ts, windowSize, cutoff, rsn7, rsn17, cen, skip) {
+  
+  # remove the first and last frames
+  ts <- ts[, -c(1:skip, (dim(ts)[2]-skip+1):dim(ts)[2])]
+  # get the dimension
+  m <- dim(ts)[1]
+  n <- dim(ts)[2]
+  
+  # calculate the correlation matrix
+  nwindows <- n-windowSize+1
+  glist <- list()
+  for (i in 1:nwindows){
+    corr_list <- rcorr(t(ts[, i:(i+windowSize-1)]), type='pearson')
+    corrmat <- corr_list$r
+    corrmat[corrmat>cutoff] <- 1
+    corrmat[corrmat<cutoff] <- 0
+    g <- graph_from_adjacency_matrix(corrmat, mode = "undirected", diag=FALSE)
+    g <- set_vertex_attr(g, "rsn7", value=rsn7)
+    g <- set_vertex_attr(g, "rsn17", value=rsn17)
+    g <- set_vertex_attr(g, "cen", value=as.list(data.frame(cen)))
+    V(g)$color <- V(g)$rsn7
+    glist[[i]] <- g
+  }
+  return(glist)
 }
 
 # Convert correlation matrix into network (thresholding)
@@ -178,6 +204,30 @@ GenNet1Comp <- function(subj, sess, windowSize) {
   save(net_series, file=paste("../output/raw_net/", subj, "_", sess, ".RData", sep=""))
 }
 
+GenNetFixedGSz <- function(subj, sess, parc_file, cutoff, windowSize) {
+  n <- strsplit(sess, "_")[[1]]
+  tr <- n[1]
+  task <- n[2]
+  phase <- n[3]
+  if(substr(sess, 1, 1) == "r") {
+    data_loc <- paste(data_folder, "/results_SIFT2/", subj, 
+                      "/fMRI/", sess, "/", sess, "_glasser_GS_bp_z_tseries.csv", sep='')
+  } else {
+    data_loc <- paste(data_folder, "/results_SIFT2/", subj, 
+                      "/fMRI/", sess, "/", sess, "_glasser_GS_z_tseries.csv", sep='')
+  }
+  op <- LoadGlasser(data_loc, parc_file, windowSize, type = "full")
+  cat(sprintf("Scan %s loaded. \n", subj))
+  
+  corrmat <- op[[1]]
+  corrmat <- lapply(corrmat, abs)
+  rsn7 <- op[[2]]
+  rsn17 <- op[[3]]
+  cen <- op[[4]]
+  net_series <- convertSimple(corrmat, rsn7, rsn17, cen, rep(cutoff, length(corrmat)))
+  save(net_series, file=paste("../output/raw_net_GSz/", subj, "_", sess, ".RData", sep=""))
+}
+
 GenNetFixedGS <- function(subj, sess, parc_file, cutoff, windowSize) {
   n <- strsplit(sess, "_")[[1]]
   tr <- n[1]
@@ -221,6 +271,12 @@ GenNetFixed <- function(subj, sess, parc_file, cutoff, windowSize) {
   save(net_series, file=paste("../output/raw_net/", subj, "_", sess, ".RData", sep=""))
 }
 
+GetNetsGSz <- function(sess, windowSize) {
+  for (subj in subj_list) {
+    GenNetFixedGSz(subj, sess, parc_file, cutoff, windowSize)
+  }
+}
+
 GetNetsGS <- function(sess, windowSize) {
   for (subj in subj_list) {
     GenNetFixedGS(subj, sess, parc_file, cutoff, windowSize)
@@ -230,6 +286,30 @@ GetNetsGS <- function(sess, windowSize) {
 GetNets <- function(sess, windowSize) {
   for (subj in subj_list) {
     GenNetFixed(subj, sess, parc_file, cutoff, windowSize)
+  }
+}
+
+GenNetSeriesGSbpz <- function(sess, subj_list, windowSize, cutoff, rsn7, rsn17, cen) {
+  n <- strsplit(sess, "_")[[1]]
+  tr <- n[1]
+  task <- n[2]
+  phase <- n[3]
+  out_dir <- paste("../output/nets_", as.character(windowSize), "f_t", as.character(cutoff*100), sep='')
+  if (!file.exists(out_dir)) {
+    dir.create(out_dir)
+  }
+  for (subj in subj_list) {
+    if(substr(sess, 1, 1) == "r") {
+      data_loc <- paste(data_folder, "/results_SIFT2/", subj, 
+                        "/fMRI/", sess, "/", sess, "_glasser_GS_bp_z_tseries.csv", sep='')
+    } else {
+      data_loc <- paste(data_folder, "/results_SIFT2/", subj, 
+                        "/fMRI/", sess, "/", sess, "_glasser_GS_z_tseries.csv", sep='')
+    }
+    ts <- as.matrix(read.csv(data_loc, header = FALSE))
+    glist <- GetGlasserNets(ts, windowSize, cutoff, rsn7, rsn17, cen, skip)
+    save(glist, file=paste(out_dir, "/", subj, "_", sess, ".RData", sep=""))
+    cat(paste(subj, 'network series is generated and saved.\n'))
   }
 }
 

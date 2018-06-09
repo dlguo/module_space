@@ -1,25 +1,32 @@
 library(igraph)
 library(Hmisc)
-library(ppcor)
-library(corpcor)
+# library(ppcor)
+# library(corpcor)
 library(gdata)
-library(parallel)
+# library(parallel)
 
 source("./net_proc.R")    # load network processing script
 source("./net_optim.R")    # load abn algorithm
 set.seed(2)
 
 data_folder <- Sys.getenv("DATA")
-windowSize <- 360
-cutoff <- .4
+windowSize <- 90
+cutoff <- .25
 cost <- .04
-skip <- 10
+skip <- 5
 
 subj_list <- list.dirs(paste(data_folder, "results_SIFT2", sep = '/'), recursive = F, full.names = F)
 parc_loc <- paste(data_folder, "Table_HCP_20170502.xls", sep='/')
-parc_file <- read.xls(parc_loc, sheet=3)
+parc <- read.xls(parc_loc, sheet=3)
+rsn7 <- (parc$glasser_RSN.7)[1:360]
+rsn17 <- (parc$glasser_RSN.17)[1:360]
+cenX <- parc$centroid.X[1:360]
+cenY <- parc$centroid.Y[1:360]
+cenZ <- parc$centroid.Z[1:360]
+cen <- rbind(cenX, cenY, cenZ)
 
-GetNets("rfMRI_REST1_LR", 360)
+
+GenNetSeriesGSbpz("rfMRI_REST1_LR", subj_list, windowSize, cutoff, rsn7, rsn17, cen)
 # GetNets("rfMRI_REST2_LR", 360)
 # GetNets("tfMRI_EMOTION_LR", 360)
 #GetNets("tfMRI_GAMBLING_LR", 20)

@@ -79,7 +79,7 @@ GetCommunity <- function(g){
 subj_list <- c('105014', '103818', '103414', '103111', '101915', '101309', '101107', '100408')
 all_nets <- list()
 for (subj in subj_list) {
-  load(paste("/home/dali/Dropbox/Projects/module_space/output/raw_net_GS/", subj, "_rfMRI_REST1_LR.RData", sep=''))
+  load(paste("/home/dali/Dropbox/Projects/module_space/output/raw_net_GSz/", subj, "_rfMRI_REST1_LR.RData", sep=''))
   all_nets[[subj]] <- net_series
 }
 M <- GetGlobalEffAndMod(all_nets)
@@ -100,6 +100,10 @@ ggplot(M, aes(x=global_eff, y=modularity, color=subject))+geom_path() + xlim(0,1
 
 # Compare the stock price networks
 library(quantmod)
+days <- 610
+windowSize <- 360
+cutoff <- .5
+
 sp500_list <- read.csv("/home/dali/Desktop/sp500.csv", header = T)
 start <- as.Date("2016-01-01")
 end <- as.Date(Sys.Date())
@@ -107,13 +111,36 @@ all_prices <- NULL
 all_companies <- NULL
 for (company in sp500_list$Symbol) {
   stock_price <- loadSymbols(company, from=start, to=end, auto.assign = F)[,6]
-  if (length(stock_price)==610 && !anyNA(stock_price)) {
+  if (length(stock_price)==days && !anyNA(stock_price)) {
     all_companies <- c(all_companies, company)
     all_prices <- rbind(all_prices, as.numeric(stock_price))
   }
 }
 rsn7 <- sp500_list[sp500_list[,1] %in% all_companies, ]$Sector
-
+ts <- all_prices
+m <- dim(ts)[1]
+n <- dim(ts)[2]
+nwindows <- n-windowSize+1
+matlist <- list()
+for (i in 1:nwindows){
+  corr_list <- rcorr(t(ts[, i:(i+windowSize-1)]), type='pearson')
+  corrmat <- corr_list$r
+  diag(corrmat) <- 0 
+  matlist[[i]] <- corrmat
+}
+glist <- list()
+for(i in 1:length(matlist)) {
+  matlist[[i]][matlist[[i]] < cutoff] <- 0
+  matlist[[i]][matlist[[i]] > cutoff] <- 1
+  g <- graph_from_adjacency_matrix(matlist[[i]], mode = "undirected", diag=FALSE)
+  g <- set_vertex_attr(g, "rsn7", value=rsn7)
+  V(g)$color <- V(g)$rsn7
+  glist[[i]] <- g
+}
+l_time <- length(glist)
+m <- data.frame(subject=rep('stock', l_time))
+m <- cbind(m, global_eff=GlobalEffSeries(glist))
+m <- cbind(m, modularity=ModuleSeries(glist))
 
 # Compare with ER graphs
 for (count in 1:100) {
@@ -142,11 +169,12 @@ for (subj in subj_list) {
 Msim$global_eff <- as.numeric(as.character(Msim$global_eff))
 Msim$modularity <- as.numeric(as.character(Msim$modularity))
 
-ggplot(M, aes(x=global_eff, y=modularity, color=subject))+geom_path() + xlim(0.25, .75) + ylim(0,.5) + coord_fixed() + 
-  geom_point(aes(x=GlobalEff(karate_graph), y=modularity(karate_graph, V(karate_graph)$rsn7)), colour='red') + 
+ggplot(M, aes(x=global_eff, y=modularity, color=subject))+geom_path() + xlim(0, .7) + ylim(0,.7) + coord_fixed() + 
+  geom_point(aes(x=GlobalEff(karate_graph), y=modularity(karate_graph, V(karate_graph)$rsn7)), colour='red') +
   geom_point(aes(x=GlobalEff(dolphin_graph), y=modularity(dolphin_graph, V(dolphin_graph)$rsn7)), colour='blue') +
   geom_point(data=Msim, aes(x=global_eff, y=modularity),alpha=.1, size=.1)
 
 ggplot(M, aes(x=global_eff, y=modularity, color=subject))+geom_path() + xlim(0.5, .7) + ylim(0,.2) + coord_fixed() + 
   geom_point(data=Msim, aes(x=global_eff, y=modularity),alpha=.1, size=.3)
 
+ggplot(M[M$subject=="103818", ], aes(x=global_eff, y=modularity))+geom_path(alpha=seq(.2, 1, length.out=839)) + xlim(0.5, .7) + ylim(0,.2) + coord_fixed()
