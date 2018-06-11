@@ -5,17 +5,24 @@ library(Hmisc)
 library(gdata)
 # library(parallel)
 
+args <- commandArgs(trailingOnly=TRUE)
 source("./net_proc.R")    # load network processing script
 source("./net_optim.R")    # load abn algorithm
 set.seed(2)
 
+# Capture from args
+windowSize <- as.numeric(args[1])
+cutoff <- as.numeric(args[2])
+subj_list <- args[3]
+sess <- args[4]
+
 data_folder <- Sys.getenv("DATA")
-windowSize <- 90
-cutoff <- .25
+# windowSize <- 90
+# cutoff <- .25
 cost <- .04
 skip <- 5
 
-subj_list <- list.dirs(paste(data_folder, "results_SIFT2", sep = '/'), recursive = F, full.names = F)
+# subj_list <- list.dirs(paste(data_folder, "results_SIFT2", sep = '/'), recursive = F, full.names = F)
 parc_loc <- paste(data_folder, "Table_HCP_20170502.xls", sep='/')
 parc <- read.xls(parc_loc, sheet=3)
 rsn7 <- (parc$glasser_RSN.7)[1:360]
@@ -26,7 +33,7 @@ cenZ <- parc$centroid.Z[1:360]
 cen <- rbind(cenX, cenY, cenZ)
 
 
-GenNetSeriesGSbpz("rfMRI_REST1_LR", subj_list, windowSize, cutoff, rsn7, rsn17, cen)
+GenNetSeriesGSbpz(sess, subj_list, windowSize, cutoff, rsn7, rsn17, cen)
 # GetNets("rfMRI_REST2_LR", 360)
 # GetNets("tfMRI_EMOTION_LR", 360)
 #GetNets("tfMRI_GAMBLING_LR", 20)
@@ -36,7 +43,6 @@ GenNetSeriesGSbpz("rfMRI_REST1_LR", subj_list, windowSize, cutoff, rsn7, rsn17, 
 # GetNets("tfMRI_WM_LR", 300)
 #GetNets("tfMRI_LANGUAGE_LR", 20)
 
-# args = commandArgs(trailingOnly=TRUE)
 # abn(args[1], args[2])
 
 # no_cores <- detectCores()

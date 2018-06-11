@@ -1,5 +1,5 @@
 library(igraph)
-library(Matrix)
+# library(Matrix)
 library(ggplot2)
 setwd("~/Dropbox/Projects/module_space/R")
 source("./net_proc.R")
@@ -55,13 +55,13 @@ chart_link = api_create(p, filename="fp_dorsal_one")
 
 ###### Compare modularity and global efficiency ######
 # Function area
-GetGlobalEffAndMod <- function(all_nets){
-  subj_list <- names(all_nets)
+GetGlobalEffAndMod <- function(subj_list, nets_loc, sess){
   M <- data.frame(NULL)
-  l_time <- length(all_nets[[1]])
   for (subj in subj_list) {
-    net <- all_nets[[subj]]
-    l_time <- length(net)
+    net <- readRDS(paste(nets_loc, subj, '_', sess, '.rds', sep=''))
+    if (!exists('l_time')) {
+      l_time <- length(net)
+    }
     m <- data.frame(subject=rep(subj, l_time))
     m <- cbind(m, global_eff=GlobalEffSeries(net))
     m <- cbind(m, modularity=ModuleSeries(net))
@@ -76,13 +76,9 @@ GetCommunity <- function(g){
 }
 # Function area ends
 
-subj_list <- c('105014', '103818', '103414', '103111', '101915', '101309', '101107', '100408')
-all_nets <- list()
-for (subj in subj_list) {
-  load(paste("/home/dali/Dropbox/Projects/module_space/output/raw_net_GSz/", subj, "_rfMRI_REST1_LR.RData", sep=''))
-  all_nets[[subj]] <- net_series
-}
-M <- GetGlobalEffAndMod(all_nets)
+subj_list <- c('211720', '151223', '103818', '127630', '103111')
+sess <- "rfMRI_REST1_LR"
+M <- GetGlobalEffAndMod(subj_list, '../output/nets_90f_t25/', sess)
 ggplot(M, aes(x=global_eff, y=modularity, color=subject))+geom_path() + xlim(0.25,.75) + ylim(0,.5) + coord_fixed()
 
 # Compare Email networks

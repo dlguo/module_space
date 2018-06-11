@@ -308,7 +308,7 @@ GenNetSeriesGSbpz <- function(sess, subj_list, windowSize, cutoff, rsn7, rsn17, 
     }
     ts <- as.matrix(read.csv(data_loc, header = FALSE))
     glist <- GetGlasserNets(ts, windowSize, cutoff, rsn7, rsn17, cen, skip)
-    save(glist, file=paste(out_dir, "/", subj, "_", sess, ".RData", sep=""))
+    saveRDS(glist, file=paste(out_dir, "/", subj, "_", sess, ".rds", sep=""))
     cat(paste(subj, 'network series is generated and saved.\n'))
   }
 }
