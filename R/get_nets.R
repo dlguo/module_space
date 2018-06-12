@@ -9,7 +9,11 @@ set.seed(2)
 
 # Capture from args
 windowSize <- as.numeric(args[1])
-cutoff <- as.numeric(args[2])
+if (is.na(as.logical(args[2]))) {
+  cutoff <- as.numeric(args[2])
+} else {
+  cutoff <- as.logical(args[2])
+}
 subj_list <- args[3]
 sess <- args[4]
 

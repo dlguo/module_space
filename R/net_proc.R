@@ -12,56 +12,6 @@ require(Hmisc)
 require(gdata)
 
 # file loading function (convert to correlation matrix)
-LoadGlasser <- function(data_loc, parc, windowSize, type=c("full", "partial"), fdr=FALSE, skip=0) {
-  
-  # evaluate type
-  type <- match.arg(type)
-  
-  # load parcellation
-  rsn7 <- (parc$glasser_RSN.7)[1:360]
-  rsn17 <- (parc$glasser_RSN.17)[1:360]
-  cenX <- parc$centroid.X[1:360]
-  cenY <- parc$centroid.Y[1:360]
-  cenZ <- parc$centroid.Z[1:360]
-  cen <- rbind(cenX, cenY, cenZ)
-  
-  # load data file
-  ts <- as.matrix(read.csv(data_loc, header = FALSE))
-  
-  # remove subcortical and cerebellum
-  #ts <- ts[which(rsn7<8), ]
-  #rsn7 <- rsn7[rsn7<8]
-  ts <- ts[, -c(1:skip, (dim(ts)[2]-skip+1):dim(ts)[2])]
-  # get the dimension
-  m <- dim(ts)[1]
-  n <- dim(ts)[2]
-  
-  # if windowSize=0, we only calculate the single layer network
-  if(windowSize==0) {
-    corr_list <- rcorr(t(ts), type='pearson')
-    q <- matrix(p.adjust(corr_list$P, method='fdr'), nrow=m)
-    corrmat <- corr_list$r
-    corrmat[q>.05] <- 0
-    diag(corrmat) <- 0
-    return(list(corrmat, rsn7, rsn17, cen))
-  }
-  
-  # calculate the correlation matrix
-  nwindows <- n-windowSize+1
-  matlist <- list()
-  for (i in 1:nwindows){
-    corr_list <- rcorr(t(ts[, i:(i+windowSize-1)]), type='pearson')
-    corrmat <- corr_list$r
-    if(fdr) {
-      q <- matrix(p.adjust(corr_list$P, method='fdr'), nrow=m)
-      corrmat[q>.05] <- 0
-    }
-    diag(corrmat) <- 0
-    matlist[[i]] <- corrmat
-  }
-  return(list(matlist, rsn7, rsn17, cen))
-}
-
 GetGlasserNets <- function(ts, windowSize, cutoff, rsn7, rsn17, cen, skip) {
   
   # remove the first and last frames
@@ -76,9 +26,14 @@ GetGlasserNets <- function(ts, windowSize, cutoff, rsn7, rsn17, cen, skip) {
   for (i in 1:nwindows){
     corr_list <- rcorr(t(ts[, i:(i+windowSize-1)]), type='pearson')
     corrmat <- corr_list$r
-    corrmat[corrmat>cutoff] <- 1
-    corrmat[corrmat<cutoff] <- 0
-    g <- graph_from_adjacency_matrix(corrmat, mode = "undirected", diag=FALSE)
+    if (cutoff == FALSE) {
+      corrmat[corrmat<0] <- 0
+    }
+    else {
+      corrmat[corrmat>cutoff] <- 1
+      corrmat[corrmat<cutoff] <- 0
+    }
+    g <- graph_from_adjacency_matrix(corrmat, mode = "undirected", weighted = TRUE, diag=FALSE)
     g <- set_vertex_attr(g, "rsn7", value=rsn7)
     g <- set_vertex_attr(g, "rsn17", value=rsn17)
     g <- set_vertex_attr(g, "cen", value=as.list(data.frame(cen)))

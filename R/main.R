@@ -10,15 +10,9 @@ source("./net_proc.R")    # load network processing script
 source("./net_optim.R")    # load abn algorithm
 set.seed(2)
 
-# Capture from args
-windowSize <- as.numeric(args[1])
-cutoff <- as.numeric(args[2])
-subj_list <- args[3]
-sess <- args[4]
-
 data_folder <- Sys.getenv("DATA")
-# windowSize <- 90
-# cutoff <- .25
+windowSize <- 90
+cutoff <- F
 cost <- .04
 skip <- 5
 
@@ -33,7 +27,7 @@ cenZ <- parc$centroid.Z[1:360]
 cen <- rbind(cenX, cenY, cenZ)
 
 
-GenNetSeriesGSbpz(sess, subj_list, windowSize, cutoff, rsn7, rsn17, cen)
+GenNetSeriesGSbpz("rfMRI_REST1_LR", subj_list, 360, cutoff, rsn7, rsn17, cen)
 # GetNets("rfMRI_REST2_LR", 360)
 # GetNets("tfMRI_EMOTION_LR", 360)
 #GetNets("tfMRI_GAMBLING_LR", 20)
@@ -64,7 +58,7 @@ GenNetSeriesGSbpz(sess, subj_list, windowSize, cutoff, rsn7, rsn17, cen)
 # cen <- op[[4]]
 # g <- convertMST(corrmat, rsn7, rsn17, cen, cost)
 # net <- iGtoNetwork(g)
-# plot.igraph(g, vertex.label=NA, vertex.size=2)
+# plot.igraph(nets[[1]], vertex.label=NA, vertex.size=2)
 # g.ergm.fit <- ergm(rewnet~edges+gwesp(decay=0.75, fixed=TRUE)+nodematch("rsn7"), verbose=T)
 
 # Multi layer
