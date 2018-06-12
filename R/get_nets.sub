@@ -9,4 +9,4 @@
 module load r
 cd $PBS_O_WORKDIR 
 
-R --vanilla --no-save --args < get_nets.R 90 0 ${SUBJ} ${SESS}
+R --vanilla --no-save --args < get_nets.R ${WINSIZE} ${CUTOFF} ${SUBJ} ${SESS}
