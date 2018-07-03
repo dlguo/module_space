@@ -103,7 +103,7 @@ ModuleDiff <- function(glist) {
   for(i in 2:length(glist)) t_mod <- c(t_mod, modularity(glist[[i]]-glist[[i-1]], com))
   t_mod
 }
-ModuleSeries <- function(glist) sapply(glist, function(g) modularity(g, V(g)$rsn7))
+ModuleSeries <- function(glist) sapply(glist, function(g) modularity(g, V(g)$rsn7, weight=E(g)$weight))
 TransitivitySeries <- function(glist) sapply(glist, transitivity)
 KStestDiff <- function(g1, g2, f) {
   ksd <- c()

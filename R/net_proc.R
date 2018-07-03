@@ -43,6 +43,22 @@ GetGlasserNets <- function(ts, windowSize, cutoff, rsn7, rsn17, cen, skip) {
   return(glist)
 }
 
+GetGlasserCorr <- function(ts, windowSize, skip, doFDR = F) {
+  # remove the first and last frames
+  ts <- ts[, -c(1:skip, (dim(ts)[2]-skip+1):dim(ts)[2])]
+  # get the dimension
+  m <- dim(ts)[1]
+  n <- dim(ts)[2]
+  
+  # calculate the correlation matrix
+  nwindows <- n-windowSize+1
+  corrmats <- array(NA, dim=c(m,m,nwindows))
+  for (i in 1:nwindows){
+    corrmats[,,i] <- rcorr(t(ts[, i:(i+windowSize-1)]), type='pearson')$r
+  }
+  corrmats
+}
+
 # Convert correlation matrix into network (thresholding)
 convertMST <- function(corrmat, rsn7, rsn17, cen, cost){
   if(is.list(corrmat)) {
@@ -265,6 +281,30 @@ GenNetSeriesGSbpz <- function(sess, subj_list, windowSize, cutoff, rsn7, rsn17, 
     glist <- GetGlasserNets(ts, windowSize, cutoff, rsn7, rsn17, cen, skip)
     saveRDS(glist, file=paste(out_dir, "/", subj, "_", sess, ".rds", sep=""))
     cat(paste(subj, 'network series is generated and saved.\n'))
+  }
+}
+
+GenCorrMatsGSbpz <- function(sess, subj_list, windowSize) {
+  n <- strsplit(sess, "_")[[1]]
+  tr <- n[1]
+  task <- n[2]
+  phase <- n[3]
+  out_dir <- paste("../output/corrmats_", as.character(windowSize), "f_t", as.character(cutoff*100), sep='')
+  if (!file.exists(out_dir)) {
+    dir.create(out_dir)
+  }
+  for (subj in subj_list) {
+    if(substr(sess, 1, 1) == "r") {
+      data_loc <- paste(data_folder, "/results_SIFT2/", subj, 
+                        "/fMRI/", sess, "/", sess, "_glasser_GS_bp_z_tseries.csv", sep='')
+    } else {
+      data_loc <- paste(data_folder, "/results_SIFT2/", subj, 
+                        "/fMRI/", sess, "/", sess, "_glasser_GS_z_tseries.csv", sep='')
+    }
+    ts <- as.matrix(read.csv(data_loc, header = FALSE))
+    corrmats <- GetGlasserCorr(ts, windowSize, skip)
+    saveRDS(corrmats, file=paste(out_dir, "/", subj, "_", sess, ".rds", sep=""))
+    cat(paste(subj, 'Correlation matrix is generated and saved.\n'))
   }
 }
 

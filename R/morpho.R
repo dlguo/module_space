@@ -55,7 +55,7 @@ chart_link = api_create(p, filename="fp_dorsal_one")
 
 ###### Compare modularity and global efficiency ######
 # Function area
-GetGlobalEffAndMod <- function(subj_list, nets_loc, sess){
+Getf1f2 <- function(subj_list, nets_loc, sess, f1, f2){
   M <- data.frame(NULL)
   for (subj in subj_list) {
     net <- readRDS(paste(nets_loc, subj, '_', sess, '.rds', sep=''))
@@ -63,8 +63,8 @@ GetGlobalEffAndMod <- function(subj_list, nets_loc, sess){
       l_time <- length(net)
     }
     m <- data.frame(subject=rep(subj, l_time))
-    m <- cbind(m, global_eff=GlobalEffSeries(net))
-    m <- cbind(m, modularity=ModuleSeries(net))
+    m <- cbind(m, m1=f1(net))
+    m <- cbind(m, m2=f2(net))
     M <- rbind(M, m)
   }
   M
@@ -76,10 +76,14 @@ GetCommunity <- function(g){
 }
 # Function area ends
 
-subj_list <- c('211720', '151223', '103818', '127630', '103111')
+subj_list <- c('211720', '151223', '103818', '127630')
 sess <- "rfMRI_REST1_LR"
-M <- GetGlobalEffAndMod(subj_list, '../output/nets_90f_t25/', sess)
-ggplot(M, aes(x=global_eff, y=modularity, color=subject))+geom_path() + xlim(0.25,.75) + ylim(0,.5) + coord_fixed()
+M360 <- Getf1f2(subj_list, '../output/nets_360f_t0/', sess, TransitivitySeries, ModuleSeries)
+M90 <- Getf1f2(subj_list, '../output/nets_90f_t0/', sess, TransitivitySeries, ModuleSeries)
+print(ggplot(M90, aes(x=m1, y=m2, color=subject))+geom_path() + xlim(.5,.8) + ylim(0,.3) + coord_fixed() + xlab('transitivity') + ylab('modularity') 
+     + ggtitle("90 frames per snap"))
+print(ggplot(M360, aes(x=m1, y=m2, color=subject))+geom_path() + xlim(.5,.8) + ylim(0,.3) + coord_fixed() + xlab('transitivity') + ylab('modularity') 
+      + ggtitle("360 frames per snap"))
 
 # Compare Email networks
 karate_graph <- read_graph("/data/karate/karate.gml", format='gml')

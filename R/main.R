@@ -27,7 +27,7 @@ cenZ <- parc$centroid.Z[1:360]
 cen <- rbind(cenX, cenY, cenZ)
 
 
-GenNetSeriesGSbpz("rfMRI_REST1_LR", subj_list, 360, cutoff, rsn7, rsn17, cen)
+GenCorrMatsGSbpz("rfMRI_REST1_LR", subj_list, windowSize, cutoff, rsn7, rsn17, cen)
 # GetNets("rfMRI_REST2_LR", 360)
 # GetNets("tfMRI_EMOTION_LR", 360)
 #GetNets("tfMRI_GAMBLING_LR", 20)
