@@ -31,4 +31,4 @@ cenZ <- parc$centroid.Z[1:360]
 cen <- rbind(cenX, cenY, cenZ)
 
 
-GenCorrMatsGSbpz(sess, subj_list, windowSize, cutoff, rsn7, rsn17, cen)
+GenCorrMatsGSbpz(sess, subj_list, windowSize)

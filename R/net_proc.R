@@ -289,7 +289,7 @@ GenCorrMatsGSbpz <- function(sess, subj_list, windowSize) {
   tr <- n[1]
   task <- n[2]
   phase <- n[3]
-  out_dir <- paste("../output/corrmats_", as.character(windowSize), "f_t", as.character(cutoff*100), sep='')
+  out_dir <- paste("../output/corrmats_", as.character(windowSize), "f", sep='')
   if (!file.exists(out_dir)) {
     dir.create(out_dir)
   }
