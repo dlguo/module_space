@@ -225,5 +225,6 @@ GlobalModTrans <- function(adj_mat, comm, type=c('arithmetic', 'geometric')){
       }
     }
   }
+  else print("wrong type.")
   closed_tri/all_tri
 }
