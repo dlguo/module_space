@@ -117,3 +117,113 @@ KStestSeries <- function(g1, g2, f) {
 }
 DiffusionSeries <- function(glist) sapply(glist, GraphMFPT)
 GlobalEffSeries <- function(glist) sapply(glist, GlobalEff)
+
+# Modular transitivity
+VertexModTrans <- function(m, comm){
+  m[m<0] <- 0
+  mats_cc <- array(NA, dim=c(length(unique(comm)), length(unique(comm)), length(unique(comm))))
+  ig <- list()
+  num_of_comm <- length(unique(comm))
+  for (g in sort(unique(comm))) {
+    ig[[g]] <- which(comm == g)
+  }
+  for (g in sort(unique(comm))) {
+    mcc <- array(NA, dim=c(length(unique(comm)), length(unique(comm)), length(ig[[g]])))
+    iv <- 1
+    for (v in ig[[g]]) {
+      # igv <- ig[[g]][ig[[g]] != v]
+      # igv <- igv[m[v, igv] != 0]
+      # s <- sum(m[v, igv])
+      # k <- sum(m[v, igv] != 0)
+      # n_pairs <- combn(igv, 2)
+      # sw <- 0
+      # for (n in 1:dim(n_pairs)[2]) {
+      #   if (m[n_pairs[1,n], n_pairs[2,n]] != 0) {
+      #     sw <- sw + (m[v, n_pairs[1,n]] + m[v, n_pairs[2,n]])/2
+      #   }
+      # }
+      # mats_cc[g, g, v] <- sw/s/k
+      nbr <- which(m[v,]>0)
+      nbr <- nbr[nbr != v]
+      s <- array(0, dim=c(num_of_comm, num_of_comm))
+      k <- array(0, dim=c(num_of_comm, num_of_comm))
+      sw <- array(0, dim=c(num_of_comm, num_of_comm))
+      for (ind_n1 in 1:(length(nbr)-1)) {
+        n1 <- nbr[ind_n1]
+        k[comm[n1], ] <- k[comm[n1], ] + 1
+        s[comm[n1], ] <- s[comm[n1], ] + m[v, n1]
+        for(ind_n2 in (ind_n1+1):length(nbr)){
+          n2 <- nbr[ind_n2]
+          if (m[n1, n2] > 0) {
+            sw[comm[n1], comm[n2]] <- sw[comm[n1], comm[n2]] + (m[v, n1] + m[v, n2])/2
+          }
+        }
+      }
+      k[comm[n2], ] <- k[comm[n2], ] + 1
+      s[comm[n2], ] <- s[comm[n2], ] + m[v, n2]
+      sw[lower.tri(sw)] <- sw[upper.tri(sw)] + sw[lower.tri(sw)]
+      sw[upper.tri(sw)] <- NA
+      k[lower.tri(k)] <- k[upper.tri(k)] + k[lower.tri(k)]
+      k[upper.tri(k)] <- NA
+      s[lower.tri(s)] <- s[upper.tri(s)] + s[lower.tri(s)]
+      s[upper.tri(s)] <- NA
+      mcc[,,iv] <- sw/s/(k-1)
+      iv <- iv + 1
+    }
+    mcc[is.nan(mcc)] <- 0
+    mcc[is.infinite(mcc)] <- 0
+    mats_cc[g,,] <- rowMeans(mcc, dims = 2)
+  }
+  mats_cc
+}
+
+GlobalModTrans <- function(adj_mat, comm, type=c('arithmetic', 'geometric')){
+  adj_mat[adj_mat<0] <- 0
+  num_of_comm <- length(unique(comm))
+  n <- dim(adj_mat)[1]
+  closed_tri <- array(0, dim=c(num_of_comm, num_of_comm, num_of_comm))
+  all_tri <- array(0, dim=c(num_of_comm, num_of_comm, num_of_comm))
+  if (type == 'arithmetic') {
+    for (x in 1:(n-2)) {
+      for (y in (x+1):(n-1)) {
+        for (z in (y+1):n) {
+          if (adj_mat[x,y]*adj_mat[x,z]*adj_mat[y,z] != 0) {
+            closed_tri[comm[x], comm[y], comm[z]] <- closed_tri[comm[x], comm[y], comm[z]] + (adj_mat[x,y] + adj_mat[x,z])/2
+            closed_tri[comm[y], comm[x], comm[z]] <- closed_tri[comm[y], comm[x], comm[z]] + (adj_mat[x,y] + adj_mat[y,z])/2
+            closed_tri[comm[z], comm[x], comm[y]] <- closed_tri[comm[z], comm[x], comm[y]] + (adj_mat[x,z] + adj_mat[y,z])/2
+            all_tri[comm[x], comm[y], comm[z]] <- all_tri[comm[x], comm[y], comm[z]] + (adj_mat[x,y] + adj_mat[x,z])/2
+            all_tri[comm[y], comm[x], comm[z]] <- all_tri[comm[y], comm[x], comm[z]] + (adj_mat[x,y] + adj_mat[y,z])/2
+            all_tri[comm[z], comm[x], comm[y]] <- all_tri[comm[z], comm[x], comm[y]] + (adj_mat[x,z] + adj_mat[y,z])/2
+          }
+          else if (adj_mat[x,y]*adj_mat[x,z] + adj_mat[x,y]*adj_mat[y,z] + adj_mat[y,z]*adj_mat[x,z] != 0) {
+            all_tri[comm[x], comm[y], comm[z]] <- all_tri[comm[x], comm[y], comm[z]] + (adj_mat[x,y] + adj_mat[x,z])/2
+            all_tri[comm[y], comm[x], comm[z]] <- all_tri[comm[y], comm[x], comm[z]] + (adj_mat[x,y] + adj_mat[y,z])/2
+            all_tri[comm[z], comm[x], comm[y]] <- all_tri[comm[z], comm[x], comm[y]] + (adj_mat[x,z] + adj_mat[y,z])/2
+          }
+        }
+      }
+    }
+  }
+  else if (type == 'geometric') {
+    for (x in 1:(n-2)) {
+      for (y in (x+1):(n-1)) {
+        for (z in (y+1):n) {
+          if (adj_mat[x,y]*adj_mat[x,z]*adj_mat[y,z] != 0) {
+            closed_tri[comm[x], comm[y], comm[z]] <- closed_tri[comm[x], comm[y], comm[z]] + sqrt(adj_mat[x,y] * adj_mat[x,z])
+            closed_tri[comm[y], comm[x], comm[z]] <- closed_tri[comm[y], comm[x], comm[z]] + sqrt(adj_mat[x,y] * adj_mat[y,z])
+            closed_tri[comm[z], comm[x], comm[y]] <- closed_tri[comm[z], comm[x], comm[y]] + sqrt(adj_mat[x,z] * adj_mat[y,z])
+            all_tri[comm[x], comm[y], comm[z]] <- all_tri[comm[x], comm[y], comm[z]] + sqrt(adj_mat[x,y] * adj_mat[x,z])
+            all_tri[comm[y], comm[x], comm[z]] <- all_tri[comm[y], comm[x], comm[z]] + sqrt(adj_mat[x,y] * adj_mat[y,z])
+            all_tri[comm[z], comm[x], comm[y]] <- all_tri[comm[z], comm[x], comm[y]] + sqrt(adj_mat[x,z] * adj_mat[y,z])
+          }
+          else if (adj_mat[x,y]*adj_mat[x,z] + adj_mat[x,y]*adj_mat[y,z] + adj_mat[y,z]*adj_mat[x,z] != 0) {
+            all_tri[comm[x], comm[y], comm[z]] <- all_tri[comm[x], comm[y], comm[z]] + sqrt(adj_mat[x,y] * adj_mat[x,z])
+            all_tri[comm[y], comm[x], comm[z]] <- all_tri[comm[y], comm[x], comm[z]] + sqrt(adj_mat[x,y] * adj_mat[y,z])
+            all_tri[comm[z], comm[x], comm[y]] <- all_tri[comm[z], comm[x], comm[y]] + sqrt(adj_mat[x,z] * adj_mat[y,z])
+          }
+        }
+      }
+    }
+  }
+  closed_tri/all_tri
+}
