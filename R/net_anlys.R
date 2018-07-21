@@ -177,7 +177,7 @@ VertexModTrans <- function(m, comm){
   mats_cc
 }
 
-GlobalModTrans <- function(adj_mat, comm, type=c('arithmetic', 'geometric')){
+GlobalModTrans <- function(adj_mat, comm, type=c('arithmetic', 'geometric', 'new')){
   adj_mat[adj_mat<0] <- 0
   num_of_comm <- length(unique(comm))
   n <- dim(adj_mat)[1]
@@ -225,6 +225,68 @@ GlobalModTrans <- function(adj_mat, comm, type=c('arithmetic', 'geometric')){
       }
     }
   }
+  else if (type == 'new') {
+    for (x in 1:(n-2)) {
+      for (y in (x+1):(n-1)) {
+        for (z in (y+1):n) {
+          if (adj_mat[x,y]*adj_mat[x,z]*adj_mat[y,z] != 0) {
+            closed_tri[comm[x], comm[y], comm[z]] <- closed_tri[comm[x], comm[y], comm[z]] + adj_mat[y,z]/sqrt(adj_mat[x,y] * adj_mat[x,z])
+            closed_tri[comm[y], comm[x], comm[z]] <- closed_tri[comm[y], comm[x], comm[z]] + adj_mat[x,z]/sqrt(adj_mat[x,y] * adj_mat[y,z])
+            closed_tri[comm[z], comm[x], comm[y]] <- closed_tri[comm[z], comm[x], comm[y]] + adj_mat[x,y]/sqrt(adj_mat[x,z] * adj_mat[y,z])
+            all_tri[comm[x], comm[y], comm[z]] <- all_tri[comm[x], comm[y], comm[z]] + 1/sqrt(adj_mat[x,y] * adj_mat[x,z])
+            all_tri[comm[y], comm[x], comm[z]] <- all_tri[comm[y], comm[x], comm[z]] + 1/sqrt(adj_mat[x,y] * adj_mat[y,z])
+            all_tri[comm[z], comm[x], comm[y]] <- all_tri[comm[z], comm[x], comm[y]] + 1/sqrt(adj_mat[x,z] * adj_mat[y,z])
+          }
+          else if (adj_mat[y,z] == 0 & adj_mat[x,y] !=0 & adj_mat[x,z] !=0) {
+            all_tri[comm[x], comm[y], comm[z]] <- all_tri[comm[x], comm[y], comm[z]] + 1/sqrt(adj_mat[x,y] * adj_mat[x,z])
+          }
+          else if (adj_mat[x,z] == 0 & adj_mat[x,y] !=0 & adj_mat[y,z] !=0) {
+            all_tri[comm[y], comm[x], comm[z]] <- all_tri[comm[y], comm[x], comm[z]] + 1/sqrt(adj_mat[x,y] * adj_mat[y,z])
+          }
+          else if (adj_mat[x,y] == 0 & adj_mat[x,z] !=0 & adj_mat[y,z] !=0) {
+            all_tri[comm[z], comm[x], comm[y]] <- all_tri[comm[z], comm[x], comm[y]] + 1/sqrt(adj_mat[x,z] * adj_mat[y,z])
+          }
+        }
+      }
+    }
+  }
   else print("wrong type.")
   closed_tri/all_tri
+}
+
+# Plot
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  library(grid)
+  
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+  
+  numPlots = length(plots)
+  
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                     ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+  
+  if (numPlots==1) {
+    print(plots[[1]])
+    
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+    
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+      
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
 }

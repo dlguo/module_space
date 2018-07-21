@@ -23,6 +23,6 @@ cen <- rbind(cenX, cenY, cenZ)
 mats <- readRDS(paste('../output/corrmats_', windowSize, 'f/', subj, '_', sess, '.rds', sep=''))
 mod_cc <- array(NA, dim=c(length(unique(rsn7)), length(unique(rsn7)), length(unique(rsn7)), dim(mats)[3]))
 for (i in 1:dim(mats)[3]) {
-  mod_cc[,,,i] <- GlobalModTrans(mats[,,i], rsn7, 'arithmetic')
+  mod_cc[,,,i] <- GlobalModTrans(mats[,,i], rsn7, 'new')
 }
 saveRDS(mod_cc, file=paste('../output/mod_cc_', windowSize, 'f/', subj, '_', sess, '.rds', sep=''))
