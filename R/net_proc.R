@@ -302,7 +302,7 @@ GenCorrMatsGSbpz <- function(sess, subj_list, windowSize) {
                         "/fMRI/", sess, "/", sess, "_glasser_GS_z_tseries.csv", sep='')
     }
     ts <- as.matrix(read.csv(data_loc, header = FALSE))
-    if (windowSize == 'F') {
+    if (windowSize == 0) {
       ts <- ts[, -c(1:skip, (dim(ts)[2]-skip+1):dim(ts)[2])]
       corrmats <- rcorr(t(ts), type='pearson')$r
       write.table(corrmats, file=paste(out_dir, "/", subj, "_", sess, ".csv", sep=""), sep=',', col.names = FALSE, row.names = FALSE)
