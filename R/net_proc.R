@@ -302,9 +302,17 @@ GenCorrMatsGSbpz <- function(sess, subj_list, windowSize) {
                         "/fMRI/", sess, "/", sess, "_glasser_GS_z_tseries.csv", sep='')
     }
     ts <- as.matrix(read.csv(data_loc, header = FALSE))
-    corrmats <- GetGlasserCorr(ts, windowSize, skip)
-    saveRDS(corrmats, file=paste(out_dir, "/", subj, "_", sess, ".rds", sep=""))
-    cat(paste(subj, 'Correlation matrix is generated and saved.\n'))
+    if (windowSize == 'F') {
+      ts <- ts[, -c(1:skip, (dim(ts)[2]-skip+1):dim(ts)[2])]
+      corrmats <- rcorr(t(ts), type='pearson')$r
+      write.table(corrmats, file=paste(out_dir, "/", subj, "_", sess, ".csv", sep=""), sep=',', col.names = FALSE, row.names = FALSE)
+      cat(paste(subj, 'Correlation matrix is generated and saved.\n'))
+    }
+    else {
+      corrmats <- GetGlasserCorr(ts, windowSize, skip)
+      saveRDS(corrmats, file=paste(out_dir, "/", subj, "_", sess, ".rds", sep=""))
+      cat(paste(subj, 'Correlation matrix is generated and saved.\n'))
+    }
   }
 }
 
