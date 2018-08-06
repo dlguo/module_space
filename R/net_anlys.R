@@ -7,6 +7,7 @@
 
 require(ggplot2)
 require(igraph)
+require(dtw)
 
 # Single network statistics
 ClusterCoeff <- function(g) transitivity(g, type = "local", isolates = "zero")
@@ -118,6 +119,31 @@ KStestSeries <- function(g1, g2, f) {
 DiffusionSeries <- function(glist) sapply(glist, GraphMFPT)
 GlobalEffSeries <- function(glist) sapply(glist, GlobalEff)
 
+# Modular density
+GlobalModDen <- function(mat, comm){
+  mat[mat<0] <- 0
+  n <- dim(mat)[1]
+  num_of_comm <- length(unique(comm))
+  mod_den <- array(0, dim=c(num_of_comm, num_of_comm))
+  for (i in 1:(n-1)) {
+    for (j in (i+1):n) {
+      a <- max(c(comm[i], comm[j]))
+      b <- min(c(comm[i], comm[j]))
+      mod_den[a, b] <- mod_den[a, b] + mat[i, j]
+    }
+  }
+  mod_den
+}
+DynGlobalModDen <- function(mats, comm) {
+  num_of_comm <- length(unique(comm))
+  allT <- dim(mats)[3]
+  mod_dens <- array(dim=c(num_of_comm,num_of_comm,allT))
+  for (i in 1:allT) {
+    mod_dens[,,i] <- GlobalModDen(mats[,,i], comm)
+  }
+  mod_dens
+}
+
 # Modular transitivity
 VertexModTrans <- function(m, comm){
   m[m<0] <- 0
@@ -176,7 +202,6 @@ VertexModTrans <- function(m, comm){
   }
   mats_cc
 }
-
 GlobalModTrans <- function(adj_mat, comm, type=c('arithmetic', 'geometric', 'new')){
   adj_mat[adj_mat<0] <- 0
   num_of_comm <- length(unique(comm))
@@ -254,6 +279,18 @@ GlobalModTrans <- function(adj_mat, comm, type=c('arithmetic', 'geometric', 'new
   closed_tri/all_tri
 }
 
+# Dtw mat
+TriDtwMat <- function(a,b){
+  n <- dim(a)[1]
+  dtw_mat <- matrix(nrow=n, ncol=n)
+  for (j in 1:n) {
+    for (i in j:n) {
+      dtw_mat[i,j] <- dtw(a[i,j,],b[i,j,],distance.only = T)$normalizedDistance
+    }
+  }
+  dtw_mat
+}
+
 # Plot
 multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
   library(grid)
@@ -290,3 +327,19 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
     }
   }
 }
+
+# Identifiablity
+IdMat <- function(a, b) {
+  n <- dim(a)[2]
+  cormat <- matrix(nrow=n, ncol=n)
+  for (x in 1:n) {
+    for (y in 1:n) {
+      cormat[x,y] <- cor(a[,x], b[,y])
+    }
+  }
+  Iself <- mean(diag(cormat))
+  diag(cormat) <- NA
+  Idiff <- mean(cormat, na.rm = T)
+  100*(Iself-Idiff)
+}
+

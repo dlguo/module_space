@@ -21,8 +21,10 @@ cenZ <- parc$centroid.Z[1:360]
 cen <- rbind(cenX, cenY, cenZ)
 
 mats <- readRDS(paste('../output/corrmats_', windowSize, 'f/', subj, '_', sess, '.rds', sep=''))
-mod_cc <- array(NA, dim=c(length(unique(rsn7)), length(unique(rsn7)), length(unique(rsn7)), dim(mats)[3]))
-for (i in 1:dim(mats)[3]) {
-  mod_cc[,,,i] <- GlobalModTrans(mats[,,i], rsn7, 'new')
-}
-saveRDS(mod_cc, file=paste('../output/mod_cc_', windowSize, 'f/', subj, '_', sess, '.rds', sep=''))
+# mod_cc <- array(NA, dim=c(length(unique(rsn7)), length(unique(rsn7)), length(unique(rsn7)), dim(mats)[3]))
+# for (i in 1:dim(mats)[3]) {
+#   mod_cc[,,,i] <- GlobalModTrans(mats[,,i], rsn7, 'new')
+# }
+# saveRDS(mod_cc, file=paste('../output/mod_cc_', windowSize, 'f/', subj, '_', sess, '.rds', sep=''))
+mod_den <- DynGlobalModDen(mats, rsn7)
+saveRDS(mod_den, file=paste('../output/mod_den_', windowSize, 'f/', subj, '_', sess, '.rds', sep=''))
