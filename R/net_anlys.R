@@ -137,9 +137,22 @@ GlobalModDen <- function(mat, comm){
 DynGlobalModDen <- function(mats, comm) {
   num_of_comm <- length(unique(comm))
   allT <- dim(mats)[3]
+  # Get regularization matrix
+  reg_mat <- matrix(nrow=num_of_comm, ncol=num_of_comm)
+  for (i in 1:num_of_comm) {
+    ne <- length(which(comm==i))
+    reg_mat[i,i] <- ne*(ne-1)
+  }
+  for (j in 1:(num_of_comm-1)) {
+    for (i in(j+1):num_of_comm) {
+      ni <- length(which(comm==i))
+      nj <- length(which(comm==j))
+      reg_mat[i,j] <- ni*nj
+    }
+  }
   mod_dens <- array(dim=c(num_of_comm,num_of_comm,allT))
   for (i in 1:allT) {
-    mod_dens[,,i] <- GlobalModDen(mats[,,i], comm)
+    mod_dens[,,i] <- GlobalModDen(mats[,,i], comm)/reg_mat
   }
   mod_dens
 }
