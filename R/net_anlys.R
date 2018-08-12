@@ -120,7 +120,7 @@ DiffusionSeries <- function(glist) sapply(glist, GraphMFPT)
 GlobalEffSeries <- function(glist) sapply(glist, GlobalEff)
 
 # Modular density
-GlobalModDen <- function(mat, comm){
+GlobalModEdges <- function(mat, comm){
   mat[mat<0] <- 0
   n <- dim(mat)[1]
   num_of_comm <- length(unique(comm))
@@ -152,7 +152,7 @@ DynGlobalModDen <- function(mats, comm) {
   }
   mod_dens <- array(dim=c(num_of_comm,num_of_comm,allT))
   for (i in 1:allT) {
-    mod_dens[,,i] <- GlobalModDen(mats[,,i], comm)/reg_mat
+    mod_dens[,,i] <- 2*GlobalModEdges(mats[,,i], comm)/reg_mat
   }
   mod_dens
 }
@@ -302,6 +302,20 @@ TriDtwMat <- function(a,b){
     }
   }
   dtw_mat
+}
+GetAllDtwMats <- function(sess, subj_list, comm){
+  n_subj <- length(subj_list)
+  num_of_comm <- length(unique(rsn7))
+  all_dtw_mats <- array(NA, dim=c(num_of_comm, num_of_comm, n_subj, n_subj))
+  for(i in 1:n_subj){
+    for(j in 1:n_subj){
+      si_mats <- readRDS(paste("~/Dropbox/Projects/module_space/output/mod_den_90f/", subj_list[i], "_", sess, "_LR.rds", sep = ""))
+      sj_mats <- readRDS(paste("~/Dropbox/Projects/module_space/output/mod_den_90f/", subj_list[j], "_", sess, "_RL.rds", sep = ""))
+      dtw_mat <- TriDtwMat(si_mats, sj_mats)
+      all_dtw_mats[,,i,j] <- dtw_mat
+    }
+  }
+  all_dtw_mats
 }
 
 # Plot

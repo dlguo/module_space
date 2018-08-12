@@ -1,0 +1,12 @@
+#!/bin/sh -l
+
+#PBS -l nodes=1:ppn=1
+#PBS -l walltime=4:00:00
+#PBS -l naccesspolicy=shared
+#PBS -o ../output/msg/${FUNC}/${SUBJ}_${SESS}.o
+#PBS -e ../output/msg/${FUNC}/${SUBJ}_${SESS}.e
+
+module load r
+cd $PBS_O_WORKDIR 
+
+R --vanilla --no-save --args < main.R ${FUNC} ${SUBJ} ${SESS} ${WINSIZE} ${CUTOFF}
