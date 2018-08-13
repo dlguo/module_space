@@ -309,8 +309,8 @@ GetAllDtwMats <- function(sess, subj_list, comm){
   all_dtw_mats <- array(NA, dim=c(num_of_comm, num_of_comm, n_subj, n_subj))
   for(i in 1:n_subj){
     for(j in 1:n_subj){
-      si_mats <- readRDS(paste("~/Dropbox/Projects/module_space/output/mod_den_90f/", subj_list[i], "_", sess, "_LR.rds", sep = ""))
-      sj_mats <- readRDS(paste("~/Dropbox/Projects/module_space/output/mod_den_90f/", subj_list[j], "_", sess, "_RL.rds", sep = ""))
+      si_mats <- readRDS(paste("../output/mod_den_90f/", subj_list[i], "_", sess, "_LR.rds", sep = ""))
+      sj_mats <- readRDS(paste("../output/mod_den_90f/", subj_list[j], "_", sess, "_RL.rds", sep = ""))
       dtw_mat <- TriDtwMat(si_mats, sj_mats)
       all_dtw_mats[,,i,j] <- dtw_mat
     }
