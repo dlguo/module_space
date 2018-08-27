@@ -55,7 +55,7 @@ if(func == "rnk") {
   subj_list <- list.files(paste(data_folder, 'results_SIFT2/', sep='/'))
   ns <- length(subj_list)
   idm <- matrix(nrow=ns, ncol=ns)
-  output_folder <- paste(data_folder, 'output/corrmats_0f/', sep='/')
+  output_folder <- paste(data_folder, 'output/corrmats_90f/', sep='/')
   R1LR <- list()
   R2LR <- list()
   for (i in 1:ns) {
