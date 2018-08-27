@@ -59,8 +59,8 @@ if(func == "rnk") {
   R1LR <- list()
   R2LR <- list()
   for (i in 1:ns) {
-    R1LR[[i]] <- as.matrix(read.csv(paste(output_folder, subj_list[i], '_rfMRI_REST1_LR.csv', sep = ''), header = F))
-    R2LR[[i]] <- as.matrix(read.csv(paste(output_folder, subj_list[i], '_rfMRI_REST2_LR.csv', sep = ''), header = F))
+    R1LR[[i]] <- as.matrix(read.csv(paste(output_folder, subj_list[i], '_rfMRI_REST1_LR.rds', sep = ''), header = F))
+    R2LR[[i]] <- as.matrix(read.csv(paste(output_folder, subj_list[i], '_rfMRI_REST2_LR.rds', sep = ''), header = F))
   }
   for (i in 1:ns) {
     for (j in 1:ns) {
