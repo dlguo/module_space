@@ -51,3 +51,22 @@ if(func == "dtw") {
     all_dtw_mats <- GetAllDtwMats(sess, subj_list, rsn7)
     saveRDS(all_dtw_mats, file=paste('../output/dtw_mats_', windowSize, 'f/', sess, '.rds', sep=''))
 }
+if(func == "rnk") {
+  subj_list <- list.files(paste(data_folder, 'results_SIFT2/', sep='/'))
+  ns <- length(subj_list)
+  idm <- matrix(nrow=ns, ncol=ns)
+  output_folder <- paste(data_folder, 'output/corrmats_0f/', sep='/')
+  R1LR <- list()
+  R2LR <- list()
+  for (i in 1:ns) {
+    R1LR[[i]] <- as.matrix(read.csv(paste(output_folder, subj_list[i], '_rfMRI_REST1_LR.csv', sep = ''), header = F))
+    R2LR[[i]] <- as.matrix(read.csv(paste(output_folder, subj_list[i], '_rfMRI_REST2_LR.csv', sep = ''), header = F))
+  }
+  for (i in 1:ns) {
+    for (j in 1:ns) {
+      idm[i,j] <- cor(c(R1LR[[i]]), c(R2LR[[j]]))
+      write("complete one line", file='../output/msg/mat.txt', append=T)
+    }
+  }
+  saveRDS(idm, file='../output/idm.rds')
+}
