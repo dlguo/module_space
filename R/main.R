@@ -54,7 +54,7 @@ if(func == "dtw") {
 if(func == "idm") {
   subj_list <- list.files(paste(data_folder, 'results_SIFT2/', sep='/'))
   ns <- length(subj_list)
-  output_folder <- paste(data_folder, 'output/corrmats_', windowSize, 'f/', sep='')
+  output_folder <- paste(data_folder, '/output/corrmats_', windowSize, 'f/', sep='')
   m1 <- as.matrix(read.csv(paste(output_folder, subj, '_rfMRI_REST1_LR.rds', sep = ''), header = F))
   for (i in 1:ns) {
     m2 <- as.matrix(read.csv(paste(output_folder, subj_list[i], '_rfMRI_REST2_LR.rds', sep = ''), header = F))
