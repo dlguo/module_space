@@ -62,3 +62,10 @@ if(func == "idm") {
     write(cor(c(m1), c(m2)), file=paste('../output/idm/', subj, '_', subj_list[i], '.txt', sep=''))
   }
 }
+if (func == "des") {
+  mats <- readRDS(paste('../output/corrmats_', windowSize, 'f/', subj, '_', sess, '.rds', sep=''))
+  mean_mat <- rowSums(mats, dims=2)
+  sd_mat <- apply(ts_mats, c(1,2), sd)
+  saveRDS(mean_mat, file=paste('../output/mean_mat_', windowSize, 'f/', subj, '_', sess, '.rds', sep=''))
+  saveRDS(sd_mat, file=paste('../output/sd_mat_', windowSize, 'f/', subj, '_', sess, '.rds', sep=''))
+}
