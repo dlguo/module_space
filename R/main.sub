@@ -6,6 +6,10 @@
 #PBS -o ../output/msg/${FUNC}/${SUBJ}_${SESS}.o
 #PBS -e ../output/msg/${FUNC}/${SUBJ}_${SESS}.e
 
+if [ ! -d ../output/msg/${FUNC} ]; then
+  mkdir -p ../output/msg/${FUNC};
+fi
+
 module load r
 cd $PBS_O_WORKDIR 
 
