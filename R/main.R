@@ -80,5 +80,5 @@ if (substr(func,1,3) == "pca") {
   ncom <- as.numeric(substr(func, 4, nchar(func)))
   mats <- readRDS(paste('../output/corrmats_', windowSize, 'f/', subj, '_', sess, '.rds', sep=''))
   pca_output <- pca_mats(mats, ncom)
-  saveRDS(pca_output, file=paste('../output/pca_', windowSize, '_comp', ncomp, '_f/', subj, '_', sess, '.rds', sep=''))
+  saveRDS(pca_output, file=paste('../output/pca_', windowSize, '_comp', ncom, '_f/', subj, '_', sess, '.rds', sep=''))
 }
