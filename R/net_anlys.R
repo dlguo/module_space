@@ -378,7 +378,7 @@ pca_mats <- function(mats, ncomp) {
   k <- 1
   for (j in 1:(n-1)) {
     for (i in (j+1):n) {
-      ts_vec[,k] <- ts_mats[i,j,]
+      ts_vec[,k] <- mats[i,j,]
       k <- k+1
     }
   }
