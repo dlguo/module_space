@@ -370,3 +370,37 @@ IdMat <- function(a, b) {
   100*(Iself-Idiff)
 }
 
+# PCA
+pca_mats <- function(mats, ncomp) {
+  n <- dim(mats)[2]
+  lt <- dim(mats)[3]
+  ts_vec <- matrix(nrow = lt, ncol = (n^2-n)/2)
+  k <- 1
+  for (j in 1:(n-1)) {
+    for (i in (j+1):n) {
+      ts_vec[,k] <- ts_mats[i,j,]
+      k <- k+1
+    }
+  }
+  ts_pca <- prcomp(ts_vec)
+  ts_vec_re <- t(t(ts_pca$x[,1:ncomp] %*% t(ts_pca$rotation[,1:ncomp])) + ts_pca$center)
+  mat_re <- array(NA, dim=dim(mats))
+  k <- 1
+  for (j in 1:(n-1)) {
+    mat_re[j,j,] <- rep(1,lt)
+    for (i in (j+1):n) {
+      # ts_vecs[,k] <- ts_mats[i,j,]
+      mat_re[i,j,] <- ts_vec_re[,k]
+      mat_re[j,i,] <- ts_vec_re[,k]
+      k <- k+1
+    }
+  }
+  mat_re[n,n,] <- rep(1,lt)
+  total_var <- (ts_pca$sdev)^2
+  pca_result <- list()
+  pca_result$mats_recon <- mat_re
+  pca_result$pca_comp <- ts_pca
+  pca_result$prop_var <- total_var/sum(total_var)
+  pca_result
+}
+

@@ -32,6 +32,13 @@ cenY <- parc$centroid.Y[1:360]
 cenZ <- parc$centroid.Z[1:360]
 cen <- rbind(cenX, cenY, cenZ)
 
+# Get LQ
+# LQ_loc <- paste(data_folder, "100_Subj_Geo.xlsx", sep='/')
+# LQ_file <- read.xls(LQ_loc)
+# LQ_subjs <- LQ_file$Subject
+# LQ_value <- LQ_file$PMAT24_A_CR
+
+
 if(func == 'gen') GenCorrMatsGSbpz(sess, subj, windowSize)
 if(func == 'mod') {
     mats <- readRDS(paste('../output/corrmats_', windowSize, 'f/', subj, '_', sess, '.rds', sep=''))
@@ -68,4 +75,10 @@ if (func == "des") {
   sd_mat <- apply(mats, c(1,2), sd)
   saveRDS(mean_mat, file=paste('../output/mean_mat_', windowSize, 'f/', subj, '_', sess, '.rds', sep=''))
   saveRDS(sd_mat, file=paste('../output/sd_mat_', windowSize, 'f/', subj, '_', sess, '.rds', sep=''))
+}
+if (substr(func,1,3) == "pca") {
+  ncom <- as.numeric(substr(func, 4, nchar(func)))
+  mats <- readRDS(paste('../output/corrmats_', windowSize, 'f/', subj, '_', sess, '.rds', sep=''))
+  pca_output <- pca_mats(mats, ncom)
+  saveRDS(pca_output, file=paste('../output/pca_', windowSize, '_comp', ncomp, '_f/', subj, '_', sess, '.rds', sep=''))
 }
