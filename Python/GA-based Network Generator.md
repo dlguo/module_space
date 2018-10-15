@@ -24,6 +24,9 @@ In this project, I will use brain functional connectivity networks as dataset. G
 [id1]: https://www.nature.com/articles/nrn2575 (Bullmore, Ed, and Olaf Sporns. "Complex brain networks: graph theoretical analysis of structural and functional systems." Nature Reviews Neuroscience 10.3 (2009): 186.)
 
 
-```python
+I get 10 times more traffic from [Google] [1] than from
+[Yahoo] [2] or [MSN] [3].
 
-```
+  [1]: http://google.com/        "Google"
+  [2]: http://search.yahoo.com/  "Yahoo Search"
+  [3]: http://search.msn.com/    "MSN Search"
