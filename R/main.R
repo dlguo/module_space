@@ -39,7 +39,7 @@ cen <- rbind(cenX, cenY, cenZ)
 # LQ_value <- LQ_file$PMAT24_A_CR
 
 
-if(func == 'gen') GenCorrMatsGSbpz(sess, subj, windowSize)
+if(func == 'gen') GenCorrMatsFromMat(sess, subj, windowSize)
 if(func == 'mod') {
     mats <- readRDS(paste('../output/corrmats_', windowSize, 'f/', subj, '_', sess, '.rds', sep=''))
     mod_cc <- array(NA, dim=c(length(unique(rsn7)), length(unique(rsn7)), length(unique(rsn7)), dim(mats)[3]))

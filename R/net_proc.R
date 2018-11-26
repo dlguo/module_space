@@ -10,6 +10,7 @@ require(Hmisc)
 # require(ppcor)
 # require(corpcor)
 require(gdata)
+require(R.matlab)
 
 # file loading function (convert to correlation matrix)
 GetGlasserNets <- function(ts, windowSize, cutoff, rsn7, rsn17, cen, skip) {
@@ -310,6 +311,32 @@ GenCorrMatsGSbpz <- function(sess, subj_list, windowSize) {
     }
     else {
       corrmats <- GetGlasserCorr(ts, windowSize, skip)
+      saveRDS(corrmats, file=paste(out_dir, "/", subj, "_", sess, ".rds", sep=""))
+      cat(paste(subj, 'Correlation matrix is generated and saved.\n'))
+    }
+  }
+}
+
+GenCorrMatsFromMat <- function(sess, subj_list, windowSize) {
+  n <- strsplit(sess, "_")[[1]]
+  tr <- n[1]
+  task <- n[2]
+  phase <- n[3]
+  out_dir <- paste("../output/corrmats_", as.character(windowSize), "f", sep='')
+  if (!file.exists(out_dir)) {
+    dir.create(out_dir)
+  }
+  for (subj in subj_list) {
+    data_loc <- paste(data_folder, "/results_SIFT2/", subj, 
+                        "/fMRI/", sess, "/FC/TSz_glasser_GS_bp_z_subc.mat", sep='')
+    ts <- readMat(data_loc)$TS.merged[1:360, ]
+    if (windowSize == 0) {
+      corrmat <- rcorr(t(ts), type='pearson')$r
+      saveRDS(corrmat, file=paste(out_dir, "/", subj, "_", sess, ".rds", sep=""))
+      cat(paste(subj, 'Correlation matrix is generated and saved.\n'))
+    }
+    else {
+      corrmats <- GetGlasserCorr(ts, windowSize, skip=0)
       saveRDS(corrmats, file=paste(out_dir, "/", subj, "_", sess, ".rds", sep=""))
       cat(paste(subj, 'Correlation matrix is generated and saved.\n'))
     }

@@ -1,5 +1,5 @@
 require(igraph)
-source('./net_anlys.R')
+source('net_anlys.R')
 
 EstimateActMat <- function(g, global_f, local_f, allow_low = F, verbose = F){
   n <- vcount(g[[1]])

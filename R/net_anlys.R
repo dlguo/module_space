@@ -404,3 +404,19 @@ pca_mats <- function(mats, ncomp) {
   pca_result
 }
 
+
+# network entropy
+entropyProb <- function(prob, base=2) {
+  entropySum <- 0
+  for (p in prob) {
+    entropySum <- entropySum - (if (p==0) 0 else p * log(p, 2))
+  }
+  entropySum
+}
+
+edgeEntropy <- function(corrmats, discrete=T) {
+  N <- vcount(glist[[1]])
+  for (x in 1:N) {
+    
+  }
+}
