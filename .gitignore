@@ -36,7 +36,7 @@ vignettes/*.pdf
 # Docs and output
 docs/
 output/
-notes/
+Notes/
 .vscode/
 .Rproj.user
 .ipynb_checkpoints/

@@ -407,16 +407,41 @@ pca_mats <- function(mats, ncomp) {
 
 # network entropy
 entropyProb <- function(prob, base=2) {
-  entropySum <- 0
-  for (p in prob) {
-    entropySum <- entropySum - (if (p==0) 0 else p * log(p, 2))
-  }
-  entropySum
+  -sum(sapply(prob, function(p) if (p==0) 0 else p * log(p, base)))
 }
 
-edgeEntropy <- function(corrmats, discrete=T) {
-  N <- vcount(glist[[1]])
-  for (x in 1:N) {
-    
+edgeEntropy <- function(adjmat) {
+  rList <- list()
+  N <- dim(adjmat)[3]
+  n <- dim(adjmat)[1]
+  rList[['N']] <- N
+  probmat <- rowSums(adjmat, dims=2)/N
+  inputmat <- cbind(c(probmat), 1-c(probmat))
+  entropy_mat <- matrix(apply(inputmat, MARGIN = 1, entropyProb), nrow=n)
+  rList[['entropy_mat']]<- entropy_mat
+  rList[['entropy_mean']] <- mean(entropy_mat)
+  rList[['entropy_mean_offdiag']] <- rList[['entropy_mean']]*n/(n-1)
+  rList
+}
+
+distanceEntropy <- function(adjmat) {
+  rList <- list()
+  N <- dim(adjmat)[3]
+  n <- dim(adjmat)[1]
+  rList[['N']] <- N
+  distmat <- array(dim=c(n,n,N))
+  for (i in 1:N) {
+    distmat[,,i] <- distances(graph_from_adjacency_matrix(adjmat[,,i], mode = "undirected", diag = F))
   }
+  entropy_mat <- array(dim=c(n,n))
+  for (i in 1:n) {
+    for (j in 1:n) {
+      dist_freq <- table(distmat[i,j,])/N
+      entropy_mat[i,j] <- entropyProb(dist_freq)
+    }
+  }
+  rList[['entropy_mat']]<- entropy_mat
+  rList[['entropy_mean']] <- mean(entropy_mat)
+  rList[['entropy_mean_offdiag']] <- rList[['entropy_mean']]*n/(n-1)
+  rList
 }
