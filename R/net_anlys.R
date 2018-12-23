@@ -8,6 +8,7 @@
 require(ggplot2)
 require(igraph)
 require(dtw)
+require(parallel)
 
 # Single network statistics
 ClusterCoeff <- function(g) transitivity(g, type = "local", isolates = "zero")
@@ -424,6 +425,26 @@ edgeEntropy <- function(adjmat) {
   rList
 }
 
+triadEntropy <- function(adjmat) {
+  rList <- list()
+  N <- dim(adjmat)[3]
+  n <- dim(adjmat)[1]
+  rList[["N"]] <- N
+  no_cores <- detectCores() - 1
+  cl <- makeCluster(no_cores, type = "FORK")
+  tcomb <- combn(n, 3)
+  z <- array(1:8, dim=c(2,2,2))
+  y <- adjmat+1
+  entropy_mat <- parSapply(cl, 1:choose(n,3), function(tri)
+    entropyProb(table(sapply(1:N, function(x) z[y[tcomb[1,tri], tcomb[2,tri], x],
+                                                y[tcomb[1,tri], tcomb[3,tri], x],
+                                                y[tcomb[2,tri], tcomb[3,tri], x]]))/N, base=8))
+  stopCluster(cl)
+  rList[['entropy_mat']] <- entropy_mat
+  rList[['entropy_mean']] <- mean(entropy_mat)
+  rList
+}
+
 distanceEntropy <- function(adjmat) {
   rList <- list()
   N <- dim(adjmat)[3]
@@ -437,7 +458,7 @@ distanceEntropy <- function(adjmat) {
   for (i in 1:n) {
     for (j in 1:n) {
       dist_freq <- table(distmat[i,j,])/N
-      entropy_mat[i,j] <- entropyProb(dist_freq)
+      entropy_mat[i,j] <- entropyProb(dist_freq, base = exp(1))
     }
   }
   rList[['entropy_mat']]<- entropy_mat
