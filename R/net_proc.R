@@ -44,9 +44,11 @@ GetGlasserNets <- function(ts, windowSize, cutoff, rsn7, rsn17, cen, skip) {
   return(glist)
 }
 
-GetGlasserCorr <- function(ts, windowSize, skip, doFDR = F) {
+GetGlasserCorr <- function(ts, windowSize, skip) {
   # remove the first and last frames
-  ts <- ts[, -c(1:skip, (dim(ts)[2]-skip+1):dim(ts)[2])]
+  if(skip>0){
+    ts <- ts[, -c(1:skip, (dim(ts)[2]-skip+1):dim(ts)[2])]
+  }
   # get the dimension
   m <- dim(ts)[1]
   n <- dim(ts)[2]
