@@ -319,7 +319,7 @@ GenCorrMatsGSbpz <- function(sess, subj_list, windowSize) {
   }
 }
 
-GenCorrMatsFromMat <- function(sess, subj_list, windowSize) {
+GenCorrMatsFromMat <- function(sess, subj_list, windowSize, windowLen=FALSE) {
   n <- strsplit(sess, "_")[[1]]
   tr <- n[1]
   task <- n[2]
@@ -331,7 +331,13 @@ GenCorrMatsFromMat <- function(sess, subj_list, windowSize) {
   for (subj in subj_list) {
     data_loc <- paste(data_folder, "/results_SIFT2/", subj, 
                         "/fMRI/", sess, "/FC/TSz_glasser_GS_bp_z_subc.mat", sep='')
-    ts <- readMat(data_loc)$TS.merged[1:360, ]
+    if (!windowLen) {
+      ts <- readMat(data_loc)$TS.merged[1:360, ]
+    } else {
+      ts <- readMat(data_loc)$TS.merged[1:360, ]
+      sp <- sample(1:(dim(ts)[2]-windowLen+1), 1)
+      ts <- ts[, sp:(sp+windowLen-1)]
+    }
     if (windowSize == 0) {
       corrmat <- rcorr(t(ts), type='pearson')$r
       saveRDS(corrmat, file=paste(out_dir, "/", subj, "_", sess, ".rds", sep=""))
