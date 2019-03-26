@@ -324,7 +324,7 @@ GenCorrMatsFromMat <- function(sess, subj_list, windowSize, windowLen=FALSE) {
   tr <- n[1]
   task <- n[2]
   phase <- n[3]
-  out_dir <- paste("../output/corrmats_", as.character(windowSize), "f", sep='')
+  out_dir <- paste("../output/corrmats_", as.character(windowSize), "f", sep='',ext=)
   if (!file.exists(out_dir)) {
     dir.create(out_dir)
   }
@@ -340,12 +340,14 @@ GenCorrMatsFromMat <- function(sess, subj_list, windowSize, windowLen=FALSE) {
     }
     if (windowSize == 0) {
       corrmat <- rcorr(t(ts), type='pearson')$r
-      saveRDS(corrmat, file=paste(out_dir, "/", subj, "_", sess, ".rds", sep=""))
+      # saveRDS(corrmat, file=paste(out_dir, "/", subj, "_", sess, ".rds", sep=""))
+      write.table(corrmat, file=paste(out_dir, "/", subj, "_", sess, ".csv", sep=""), quote = F, sep=',', col.names = F, row.names = F)
       cat(paste(subj, 'Correlation matrix is generated and saved.\n'))
     }
     else {
       corrmats <- GetGlasserCorr(ts, windowSize, skip=0)
-      saveRDS(corrmats, file=paste(out_dir, "/", subj, "_", sess, ".rds", sep=""))
+      # saveRDS(corrmats, file=paste(out_dir, "/", subj, "_", sess, ".rds", sep=""))
+      write.table(corrmats, file=paste(out_dir, "/", subj, "_", sess, ".csv", sep=""), quote = F, sep=',', col.names = F, row.names = F)
       cat(paste(subj, 'Correlation matrix is generated and saved.\n'))
     }
   }
