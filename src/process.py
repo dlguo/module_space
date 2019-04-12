@@ -24,13 +24,18 @@ def vec_to_mat(adj_vec):
 
 class AdjMatDataset(Dataset):
 
-    def __init__(self, mats_dir, rsn_csv, transform=None):
+    def __init__(self, mats_dir, rsn_csv, task=None, transform=None):
         """
         Initialize the class with the path of folder saving
         all csv filed adjacency matries
         """
         self.mats_dir = mats_dir
-        self.mats_arr = os.listdir(mats_dir)
+        mats_arr = os.listdir(mats_dir)
+        if task:
+            for i in range(len(mats_arr)-1, -1, -1):
+                if task not in mats_arr[i]:
+                    del(mats_arr[i])
+        self.mats_arr = mats_arr
         rsn = pd.read_csv(rsn_csv)
         self.rsn7 = rsn['rsn7'].values
         self.rsn17 = rsn['rsn17'].values
@@ -41,7 +46,7 @@ class AdjMatDataset(Dataset):
         self.low_tri_idx = np.tril_indices(rsn.shape[0],-1)
 
     def __len__(self):
-        return len(os.listdir(self.mats_dir))
+        return len(self.mats_arr)
     
     def __getitem__(self, idx):
         mat_name = self.mats_arr[idx]
