@@ -22,6 +22,19 @@ def vec_to_mat(adj_vec):
     np.fill_diagonal(adj_mat, 1.)
     return adj_mat
 
+def tsp_seq(coords):
+    """
+    This function returns the order by TSP solution. It enforces shortest
+    distance between neighbors.
+    INPUT:
+      coords(n x m): coordinates matrix of n nodes having m dimensions.
+    OUTPUT:
+      idx_seq(n): the sequence of nodes from TSP solution. One permutation
+                  of range(n)
+    """
+    n,m = coords.shape
+    
+
 class AdjMatDataset(Dataset):
 
     def __init__(self, mats_dir, rsn_csv, task=None, transform=None):
