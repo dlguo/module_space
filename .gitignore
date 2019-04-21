@@ -37,7 +37,6 @@ vignettes/*.pdf
 docs/
 output/
 notes/*.py
-Notes
 .vscode/
 .Rproj.user
 .ipynb_checkpoints/
