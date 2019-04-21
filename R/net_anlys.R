@@ -452,7 +452,7 @@ distanceEntropy <- function(adjmat) {
   rList[['N']] <- N
   distmat <- array(dim=c(n,n,N))
   for (i in 1:N) {
-    distmat[,,i] <- distances(graph_from_adjacency_matrix(adjmat[,,i], mode = "undirected", diag = F))
+    distmat[,,i] <- 1/distances(graph_from_adjacency_matrix(adjmat[,,i], mode = "undirected", diag = F))
   }
   entropy_mat <- array(0, dim=c(n,n))
   for (i in 1:(n-1)) {
