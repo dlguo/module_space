@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
+import random
+import math
 from torch.utils.data import Dataset, DataLoader
 
 def show_adjmat(adjmat, idx=None):
@@ -22,18 +24,11 @@ def vec_to_mat(adj_vec):
     np.fill_diagonal(adj_mat, 1.)
     return adj_mat
 
-def tsp_seq(coords):
-    """
-    This function returns the order by TSP solution. It enforces shortest
-    distance between neighbors.
-    INPUT:
-      coords(n x m): coordinates matrix of n nodes having m dimensions.
-    OUTPUT:
-      idx_seq(n): the sequence of nodes from TSP solution. One permutation
-                  of range(n)
-    """
-    n,m = coords.shape
-    
+def binarize_vec(vec, cutoff):
+    x = torch.tensor(vec)
+    x[x>=cutoff] = 1.
+    x[x<cutoff] = 0.
+    return x
 
 class AdjMatDataset(Dataset):
 
@@ -52,9 +47,7 @@ class AdjMatDataset(Dataset):
         rsn = pd.read_csv(rsn_csv)
         self.rsn7 = rsn['rsn7'].values
         self.rsn17 = rsn['rsn17'].values
-        self.cenX = rsn['cenX'].values
-        self.cenY = rsn['cenY'].values
-        self.cenZ = rsn['cenZ'].values
+        self.cen = rsn[['cenX', 'cenY', 'cenZ']].values
         self.transform = transform
         self.low_tri_idx = np.tril_indices(rsn.shape[0],-1)
 
@@ -74,6 +67,7 @@ class AdjMatDataset(Dataset):
                   'phase': sess_list[3],
                   'name': mat_name[:-4]}
         if self.transform:
-            sample = self.transform(sample)
+            sample['adj_mat'] = self.transform(sample['adj_mat'])
+            sample['adj_vec'] = self.transform(sample['adj_vec'])
         
         return sample
