@@ -107,6 +107,7 @@ ModuleDiff <- function(glist) {
 }
 ModuleSeries <- function(glist) sapply(glist, function(g) modularity(g, V(g)$rsn7, weight=E(g)$weight))
 TransitivitySeries <- function(glist) sapply(glist, transitivity)
+AssortativitySeries <- function(glist) sapply(glist, assortativity_degree)
 KStestDiff <- function(g1, g2, f) {
   ksd <- c()
   for(i in 2:length(g1)) ksd <- c(ksd, ks.test(f(g1[[i]]-g1[[i-1]]), f(g2[[i]]-g2[[i-1]]))$statistic[[1]])
@@ -408,7 +409,8 @@ pca_mats <- function(mats, ncomp) {
 
 # network entropy
 entropyProb <- function(prob, base=length(prob)) {
-  -sum(sapply(prob, function(p) if (p==0) 0 else p * log(p, base)))
+  if (length(prob) == 1) return(0)
+  else return(-sum(sapply(prob, function(p) if (p==0) 0 else p * log(p, base))))
 }
 
 edgeEntropy <- function(adjmat) {
@@ -421,7 +423,7 @@ edgeEntropy <- function(adjmat) {
   entropy_mat <- matrix(apply(inputmat, MARGIN = 1, function(x) entropyProb(x,base=2)), nrow=n)
   rList[['entropy_mat']]<- entropy_mat
   rList[['entropy_mean']] <- mean(entropy_mat)
-  rList[['entropy_mean_offdiag']] <- rList[['entropy_mean']]*n/(n-1)
+  rList[['entropy_mean_offdiag']] <- mean(entropy_mat[lower.tri(entropy_mat, diag = F)])
   rList
 }
 
@@ -464,6 +466,6 @@ distanceEntropy <- function(adjmat) {
   entropy_mat <- entropy_mat + t(entropy_mat)
   rList[['entropy_mat']]<- entropy_mat
   rList[['entropy_mean']] <- mean(entropy_mat)
-  rList[['entropy_mean_offdiag']] <- rList[['entropy_mean']]*n/(n-1)
+  rList[['entropy_mean_offdiag']] <- mean(entropy_mat[lower.tri(entropy_mat, diag = F)])
   rList
 }
