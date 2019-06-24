@@ -469,3 +469,19 @@ distanceEntropy <- function(adjmat) {
   rList[['entropy_mean_offdiag']] <- mean(entropy_mat[lower.tri(entropy_mat, diag = F)])
   rList
 }
+
+TriadMutualInfo <- function(adjmat) {
+  N <- dim(adjmat)[3]
+  n <- dim(adjmat)[1]
+  entropyMat <- array(dim=c(n,n,n))
+  for (i in 1:n) {
+    for (j in (1:n)[-i]) {
+      for (k in (1:n)[-c(i,j)]) {
+        neis <- sapply(1:N, function(x) adjmat[i,j,x]*adjmat[i,k,x])
+        ys <- adjmat[j,k,]
+        entropyMat[i,j,k] <- entropyProb(table(neis)/N) + entropyProb(table(ys)/N) - entropyProb(table((neis+2)*(ys-2))/N)
+      }
+    }
+  }
+  entropyMat
+}
