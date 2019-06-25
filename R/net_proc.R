@@ -320,6 +320,11 @@ GenCorrMatsGSbpz <- function(sess, subj_list, windowSize) {
 }
 
 GenCorrMatsFromMat <- function(sess, subj_list, windowSize, windowLen=FALSE) {
+  #windowSize: =0 when calculate the correlation for the whole session. =integer for sliding 
+  #            window size.
+  #windowLen: when you want to specify the length of TS to be used, assign a value here.
+  #          the chunk will be selected uniformly randomly.
+  
   n <- strsplit(sess, "_")[[1]]
   tr <- n[1]
   task <- n[2]
