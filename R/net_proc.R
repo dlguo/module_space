@@ -329,7 +329,7 @@ GenCorrMatsFromMat <- function(sess, subj_list, windowSize, windowLen=FALSE) {
   tr <- n[1]
   task <- n[2]
   phase <- n[3]
-  out_dir <- paste("../output/corrmats_", as.character(windowSize), "f", sep='',ext=)
+  out_dir <- paste("../output/corrmats_", as.character(windowSize), "f", sep='')
   if (!file.exists(out_dir)) {
     dir.create(out_dir)
   }
