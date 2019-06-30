@@ -447,7 +447,7 @@ triadEntropy <- function(adjmat) {
   rList
 }
 
-distanceEntropy <- function(adjmat) {
+distanceEntropy <- function(adjmat, rm.neighbor=F) {
   rList <- list()
   N <- dim(adjmat)[3]
   n <- dim(adjmat)[1]
@@ -459,7 +459,13 @@ distanceEntropy <- function(adjmat) {
   entropy_mat <- array(0, dim=c(n,n))
   for (i in 1:(n-1)) {
     for (j in (i+1):n) {
-      dist_freq <- table(distmat[i,j,])/N
+      if (rm.neighbor) {
+        td <- table(distmat[i,j,])
+        td <- td[-which(names(td)=='1')]
+        dist_freq <- td/sum(td)
+      } else {
+        dist_freq <- table(distmat[i,j,])/N
+      }
       if (length(dist_freq)>1) entropy_mat[i,j] <- entropyProb(dist_freq)
     }
   }
