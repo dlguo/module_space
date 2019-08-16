@@ -15,6 +15,13 @@ def show_adjmat(adjmat, idx=None):
         plt.imshow(adjmat)
     plt.pause(.001)
 
+def read_adjmat(file_name, cutoff=None):
+    adj_mat = torch.tensor(pd.read_csv(file_name, header=None).values, dtype=torch.float)
+    if cutoff is not None:
+        adj_mat[adj_mat>=cutoff] = 1.
+        adj_mat[adj_mat<cutoff] = 0.
+    return adj_mat
+
 def vec_to_mat(adj_vec):
     n = int((1+np.sqrt(1+8*len(adj_vec)))/2)
     adj_mat = np.zeros((n,n), dtype=float)
