@@ -74,8 +74,14 @@ class VAE_bin(nn.Module):
         z = self.reparameterize(mu, logvar)
         return self.decode(z), mu, logvar
 
-def bin_loss_function(recon_x, x, mu, logvar):
+def entropy_loss_function(recon_x, x, mu, logvar):
     #BCE = F.binary_cross_entropy(recon_x, x.view(-1, 64620), reduction='sum')
+    batch_size = x.shape[0]
+    prob_x = torch.stack([torch.sum(x, dim=0), batch_size-torch.sum(x, dim=0)])/batch_size
+    prob_recon = torch.stack([torch.sum(recon_x, dim=0), batch_size-torch.sum(recon_x, dim=0)])/batch_size
+    x_entropy = torch.distributions.Categorical(probs=prob_x.transpose(0,1)).entropy()
+    recon_entropy = torch.distributions.Categorical(probs=prob_recon.transpose(0,1)).entropy()
+    ENTE = F.mse_loss(recon_entropy, x_entropy, reduction='sum')
     BCE = F.mse_loss(recon_x, x.view(-1, 64620), reduction='sum')
     # see Appendix B from VAE paper:
     # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
@@ -84,7 +90,7 @@ def bin_loss_function(recon_x, x, mu, logvar):
     KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
     #print("BCE: %f, KLD: %f \n" % (BCE, KLD))
 
-    return BCE + KLD
+    return ENTE + BCE + KLD
 
 """
 class VAE_conv(nn.Module):
